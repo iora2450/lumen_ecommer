@@ -1,0 +1,33 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../views/**/*.blade.php';
+
+@theme {
+    --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+    --color-lumens-navy: #203749;
+    --color-lumens-yellow: #ffae00;
+    --color-lumens-mist: #c8d3d7;
+    --color-lumens-ink: #142632;
+}
+
+@layer base {
+    html { scroll-behavior: smooth; }
+    body { background: #f7f9fa; color: var(--color-lumens-ink); }
+    button, a { -webkit-tap-highlight-color: transparent; }
+}
+
+@layer utilities {
+    .page-shell {
+        width: min(100% - 2rem, 1180px);
+        margin-inline: auto;
+    }
+
+    .soft-grid {
+        background-image:
+            linear-gradient(rgba(255, 255, 255, .05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, .05) 1px, transparent 1px);
+        background-size: 34px 34px;
+    }
+}

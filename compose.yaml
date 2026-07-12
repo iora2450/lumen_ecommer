@@ -1,0 +1,112 @@
+services:
+  assets:
+    image: node:22-alpine
+    container_name: lumens-web-assets
+    working_dir: /app
+    command: sh -c "npm install && npm run build"
+    volumes:
+      - ./:/app
+      - lumens-node-modules:/app/node_modules
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    container_name: lumens-web-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    depends_on:
+      assets:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks: [lumens]
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: lumens-web-nginx
+    restart: unless-stopped
+    ports:
+      - "8090:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [app]
+    networks: [lumens]
+
+  db:
+    image: mysql:8.4
+    container_name: lumens-web-db
+    restart: unless-stopped
+    ports:
+      - "3312:3306"
+    environment:
+      MYSQL_DATABASE: lumens_ecommerce
+      MYSQL_USER: lumens
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - lumens-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [lumens]
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: lumens-web-redis
+    restart: unless-stopped
+    volumes:
+      - lumens-redis:/data
+    networks: [lumens]
+
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    container_name: lumens-web-queue
+    restart: unless-stopped
+    command: php artisan queue:work --sleep=3 --tries=3 --timeout=90
+    volumes:
+      - ./:/var/www/html
+    depends_on: [app, redis]
+    networks: [lumens]
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    container_name: lumens-web-scheduler
+    restart: unless-stopped
+    command: php artisan schedule:work
+    volumes:
+      - ./:/var/www/html
+    depends_on: [app, redis]
+    networks: [lumens]
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: lumens-web-mailpit
+    restart: unless-stopped
+    ports:
+      - "8026:8025"
+    networks: [lumens]
+
+networks:
+  lumens:
+    driver: bridge
+
+volumes:
+  lumens-db:
+  lumens-redis:
+  lumens-node-modules:
