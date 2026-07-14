@@ -1,8 +1,12 @@
 @extends('layouts.app')
 @section('title', $product->name . ' | Lumens')
-@section('description', $product->description ?? 'Detalles del producto ' . $product->name)
+@section('description', Illuminate\Support\Str::limit($product->display_description ?? 'Detalles del producto ' . $product->name, 160))
 
 @section('content')
+@php
+    $imageUrl = $product->display_image_url;
+    $description = $product->display_description;
+@endphp
 <div class="mx-auto max-w-7xl px-4 py-8">
     {{-- Breadcrumb --}}
     <nav class="text-sm text-slate-500 mb-6">
@@ -20,8 +24,12 @@
     <div class="grid gap-10 lg:grid-cols-2">
         {{-- Imagen --}}
         <div class="rounded-2xl border border-slate-200 bg-white p-8 aspect-square flex items-center justify-center">
-            @if ($product->image_url)
-                <img src="{{ asset($product->image_url) }}" alt="{{ $product->name }}" class="size-full object-contain">
+            @if ($imageUrl)
+                <img src="{{ $imageUrl }}" alt="{{ $product->name }}" class="size-full object-contain"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <svg class="hidden size-32 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
             @else
                 <svg class="size-32 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -69,8 +77,8 @@
             </div>
 
             {{-- Descripción --}}
-            @if ($product->description)
-                <p class="mt-6 text-slate-700 leading-relaxed">{{ $product->description }}</p>
+            @if ($description)
+                <p class="mt-6 text-slate-700 leading-relaxed">{{ $description }}</p>
             @endif
 
             {{-- CTA --}}

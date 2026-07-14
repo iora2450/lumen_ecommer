@@ -21,6 +21,16 @@ Route::get('brands',             [BrandController::class, 'index'])->name('api.b
 Route::post('quotes', [QuoteController::class, 'store'])->name('api.quotes.store');
 Route::get('quotes/{quoteNumber}', [QuoteController::class, 'show'])->name('api.quotes.show');
 
-// ── Sync (recibe datos desde Sistema Lumen) ─────────────────────────────
-Route::post('sync/lumen',   [SyncController::class, 'lumen'])->name('api.sync.lumen');
-Route::get('sync/status',   [SyncController::class, 'status'])->name('api.sync.status');
+// ── Sync (recibe webhooks del ERP / Sistema Lumen) ─────────────────────
+Route::prefix('sync')->group(function () {
+    Route::get('health',   [SyncController::class, 'health'])->name('api.sync.health');
+    Route::get('status',   [SyncController::class, 'status'])->name('api.sync.status');
+
+    Route::post('catalog',   [SyncController::class, 'catalog'])->name('api.sync.catalog');
+    Route::post('products',  [SyncController::class, 'products'])->name('api.sync.products');
+    Route::post('inventory', [SyncController::class, 'inventory'])->name('api.sync.inventory');
+    Route::post('prices',    [SyncController::class, 'prices'])->name('api.sync.prices');
+
+    // Legacy / backward compatibility
+    Route::post('lumen',     [SyncController::class, 'lumen'])->name('api.sync.lumen');
+});

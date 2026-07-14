@@ -34,6 +34,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('sync',          [SyncAdminController::class, 'index'])->name('sync.index');
         Route::post('sync/run',     [SyncAdminController::class, 'runNow'])->name('sync.run');
+        Route::post('sync/pull',    [SyncAdminController::class, 'pull'])->name('sync.pull');
         Route::post('sync/regenerate', [SyncAdminController::class, 'regenerateKey'])->name('sync.regenerate');
     });
 });

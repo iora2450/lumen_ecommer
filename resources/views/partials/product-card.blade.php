@@ -1,12 +1,13 @@
 @php
     $price = $product->effective_price ?? $product->price;
+    $imageUrl = $product->display_image_url;
 @endphp
 <a href="{{ route('catalog.show', $product->slug) }}"
    class="group flex flex-col h-full rounded-2xl border border-slate-200 bg-white overflow-hidden transition-all duration-300 hover:border-[#FFAE00] hover:shadow-xl hover:-translate-y-1">
     {{-- Image / placeholder --}}
     <div class="relative aspect-square bg-white flex items-center justify-center overflow-hidden p-6">
-        @if ($product->image_url)
-            <img src="{{ asset($product->image_url) }}" alt="{{ $product->name }}"
+        @if ($imageUrl)
+            <img src="{{ $imageUrl }}" alt="{{ $product->name }}"
                  class="size-full object-contain transition-transform duration-500 group-hover:scale-110"
                  onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
             <div class="hidden size-full items-center justify-center text-slate-400">

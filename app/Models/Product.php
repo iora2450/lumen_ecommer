@@ -11,13 +11,17 @@ use Illuminate\Support\Str;
 class Product extends Model
 {
     protected $fillable = [
-        'lumen_id', 'sku', 'name', 'slug', 'description',
-        'price', 'compare_at_price', 'cost', 'qty', 'image_url',
+        'lumen_id', 'sku', 'name', 'slug',
+        'short_description', 'description',
+        'price', 'compare_at_price', 'cost', 'currency',
+        'qty', 'available_qty', 'reserved_qty', 'backorder_qty', 'stock_status',
+        'image_url',
         'category_id', 'brand_id',
         'is_featured', 'is_promotion', 'promotion_price',
+        'promotion_starts_at', 'promotion_ends_at',
         'specs', 'tags', 'certifications',
         'weight', 'dimensions', 'upc', 'mpn',
-        'is_active', 'synced_at',
+        'is_active', 'synced_at', 'erp_last_sync_at',
     ];
 
     protected $casts = [
@@ -26,6 +30,9 @@ class Product extends Model
         'cost' => 'decimal:2',
         'promotion_price' => 'decimal:2',
         'qty' => 'integer',
+        'available_qty' => 'integer',
+        'reserved_qty' => 'integer',
+        'backorder_qty' => 'integer',
         'is_featured' => 'boolean',
         'is_promotion' => 'boolean',
         'is_active' => 'boolean',
@@ -33,6 +40,9 @@ class Product extends Model
         'tags' => 'array',
         'certifications' => 'array',
         'synced_at' => 'datetime',
+        'erp_last_sync_at' => 'datetime',
+        'promotion_starts_at' => 'datetime',
+        'promotion_ends_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -72,26 +82,120 @@ class Product extends Model
         return $this->hasOne(ProductImage::class)->where('is_primary', true);
     }
 
+    public function technicalSpecs(): HasMany
+    {
+        return $this->hasMany(ProductTechnicalSpec::class)->orderBy('sort_order');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(ProductDocument::class)->orderBy('sort_order');
+    }
+
+    public function relatedProducts(): HasMany
+    {
+        return $this->hasMany(ProductRelated::class)->orderBy('sort_order');
+    }
+
     public function getEffectivePriceAttribute(): float
     {
-        if ($this->is_promotion && $this->promotion_price) {
-            return (float) $this->promotion_price;
-        }
-        return (float) $this->price;
+        $now = now();
+        $onPromo = $this->is_promotion
+            && $this->promotion_price
+            && (!$this->promotion_starts_at || $this->promotion_starts_at->lte($now))
+            && (!$this->promotion_ends_at || $this->promotion_ends_at->gte($now));
+
+        return $onPromo ? (float) $this->promotion_price : (float) $this->price;
     }
 
     public function getIsOnSaleAttribute(): bool
     {
-        return $this->is_promotion && $this->promotion_price && $this->promotion_price < $this->price;
+        return $this->effective_price < (float) $this->price;
     }
 
     public function getStockBadgeAttribute(): string
     {
+        if ($this->stock_status) {
+            return $this->stock_status;
+        }
         return match (true) {
             $this->qty <= 0 => 'out_of_stock',
             $this->qty < 10 => 'low_stock',
             default => 'in_stock',
         };
+    }
+
+    public function getDisplayDescriptionAttribute(): ?string
+    {
+        return $this->plainText($this->description);
+    }
+
+    public function getDisplayImageUrlAttribute(): ?string
+    {
+        $image = trim((string) $this->image_url);
+
+        if ($image === '') {
+            return null;
+        }
+
+        $image = trim(explode(',', $image)[0]);
+
+        if (preg_match('#^https?://#i', $image)) {
+            return $this->encodeUrlPath($image);
+        }
+
+        if (str_starts_with($image, '/')) {
+            return asset($image);
+        }
+
+        if (str_contains($image, '/')) {
+            return asset($image);
+        }
+
+        $baseUrl = rtrim((string) config('erp.legacy_public_url'), '/');
+        $imagePath = trim((string) config('erp.legacy_product_image_path'), '/');
+
+        return $baseUrl . '/' . $imagePath . '/' . $this->encodePath($image);
+    }
+
+    protected function plainText(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $text = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace('/<\s*br\s*\/?>/i', ' ', $text);
+        $text = preg_replace('/<\s*\/?(p|div|span|li|ul|ol)[^>]*>/i', ' ', $text);
+        $text = strip_tags($text);
+        $text = str_replace("\xc2\xa0", ' ', $text);
+        $text = preg_replace('/\s+/', ' ', $text);
+
+        return trim($text) ?: null;
+    }
+
+    protected function encodeUrlPath(string $url): string
+    {
+        $parts = parse_url($url);
+
+        if (!$parts || empty($parts['path'])) {
+            return $url;
+        }
+
+        $encodedPath = $this->encodePath($parts['path']);
+        $rebuilt = ($parts['scheme'] ?? 'http') . '://' . ($parts['host'] ?? '');
+        $rebuilt .= isset($parts['port']) ? ':' . $parts['port'] : '';
+        $rebuilt .= $encodedPath;
+        $rebuilt .= isset($parts['query']) ? '?' . $parts['query'] : '';
+
+        return $rebuilt;
+    }
+
+    protected function encodePath(string $path): string
+    {
+        return collect(explode('/', $path))
+            ->map(fn ($segment) => $segment === '' ? '' : rawurlencode($segment))
+            ->implode('/');
     }
 
     public function scopeActive($query)

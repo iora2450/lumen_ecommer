@@ -48,6 +48,11 @@
                     ✅ {{ session('success') }}
                 </div>
             @endif
+            @if (session('error'))
+                <div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-rose-800">
+                    ❌ {{ session('error') }}
+                </div>
+            @endif
 
             <header class="mb-6">
                 <h1 class="text-2xl font-bold text-[#203749]">@yield('title')</h1>

@@ -2,29 +2,44 @@
 
 namespace App\Console\Commands;
 
+use App\Models\ProcessedSync;
 use App\Models\Setting;
 use App\Models\SyncLog;
+use App\Services\Erp\ErpSyncService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class LumenSync extends Command
 {
     protected $signature = 'lumen:sync {--dry-run : Solo mostrar lo que se sincronizaría}';
-    protected $description = 'Sincroniza productos, categorías y marcas desde Sistema Lumen';
+    protected $description = 'Sincroniza productos, categorías y marcas desde Sistema Lumen (DB directa)';
 
-    public function handle(): int
+    public function handle(ErpSyncService $sync): int
     {
-        $log = SyncLog::create(['source' => 'lumen', 'status' => 'started']);
-        $this->info('🔄 Iniciando sincronización con Sistema Lumen...');
+        $syncId = 'LUMEN-' . now()->format('Ymd-His') . '-' . strtoupper(substr(md5((string) microtime(true)), 0, 6));
+        $log = SyncLog::create([
+            'source'  => 'lumen',
+            'status'  => 'started',
+            'message' => "lumen.db-direct sync_id=$syncId",
+        ]);
+
+        ProcessedSync::create([
+            'sync_id'     => $syncId,
+            'source'      => 'lumen',
+            'mode'        => 'upsert',
+            'status'      => 'processing',
+            'received_at' => now(),
+        ]);
+
+        $this->info('🔄 Iniciando sincronización directa desde Sistema Lumen...');
 
         try {
-            // Conectar a la base de datos de Lumen directamente
-            $lumenProducts   = $this->fetchLumenData();
-            $categoriesCount = count($lumenProducts['categories'] ?? []);
-            $brandsCount     = count($lumenProducts['brands'] ?? []);
-            $productsCount   = count($lumenProducts['products'] ?? []);
+            $lumenData = $this->fetchLumenData();
+
+            $categoriesCount = count($lumenData['categories'] ?? []);
+            $brandsCount     = count($lumenData['brands'] ?? []);
+            $productsCount   = count($lumenData['products'] ?? []);
 
             $this->line("   Categorías: $categoriesCount");
             $this->line("   Marcas: $brandsCount");
@@ -36,24 +51,34 @@ class LumenSync extends Command
                 return self::SUCCESS;
             }
 
-            // Sincronizar
-            $syncCategories = $this->syncCategories($lumenProducts['categories'] ?? []);
-            $syncBrands     = $this->syncBrands($lumenProducts['brands'] ?? []);
-            $syncProducts   = $this->syncProducts($lumenProducts['products'] ?? []);
+            $catRes = $sync->syncCategories($lumenData['categories'] ?? []);
+            $brdRes = $sync->syncBrands($lumenData['brands'] ?? []);
+            $prdRes = $sync->syncProducts($lumenData['products'] ?? []);
 
             Setting::set('sync_last_run', now()->toIso8601String(), 'sync');
 
-            $log->update([
-                'status'           => 'success',
-                'products_synced'  => $syncProducts,
-                'categories_synced'=> $syncCategories,
-                'brands_synced'    => $syncBrands,
-                'finished_at'      => now(),
-                'message'          => "Synced $syncProducts products, $syncCategories categories, $syncBrands brands",
+            $summary = array_merge($catRes->summary, $brdRes->summary, $prdRes->summary);
+            $errors  = array_merge($catRes->errors, $brdRes->errors, $prdRes->errors);
+
+            ProcessedSync::where('sync_id', $syncId)->update([
+                'status'         => empty($errors) ? 'success' : 'partial_success',
+                'summary'        => $summary,
+                'items_processed'=> ($prdRes->created + $prdRes->updated) + ($catRes->created + $catRes->updated) + ($brdRes->created + $brdRes->updated),
+                'items_failed'   => count($errors),
+                'finished_at'    => now(),
             ]);
 
-            $this->info("✅ Sincronización completa: $syncProducts productos, $syncCategories categorías, $syncBrands marcas.");
-            return self::SUCCESS;
+            $log->update([
+                'status'           => empty($errors) ? 'success' : 'partial_success',
+                'products_synced'  => $prdRes->created + $prdRes->updated,
+                'categories_synced'=> $catRes->created + $catRes->updated,
+                'brands_synced'    => $brdRes->created + $brdRes->updated,
+                'finished_at'      => now(),
+                'message'          => "Synced {$prdRes->created} new + {$prdRes->updated} updated products, " . count($errors) . " errors",
+            ]);
+
+            $this->info("✅ Sincronización completa: {$prdRes->created}+{$prdRes->updated} productos, " . count($errors) . " errores.");
+            return $errors ? self::FAILURE : self::SUCCESS;
         } catch (\Throwable $e) {
             $log->update(['status' => 'failed', 'finished_at' => now(), 'message' => $e->getMessage()]);
             $this->error('❌ Error: ' . $e->getMessage());
@@ -70,7 +95,6 @@ class LumenSync extends Command
         }
 
         try {
-            // Conectar a la DB de Lumen
             config(['database.connections.lumen_runtime' => $lumenConfig]);
             DB::purge('lumen_runtime');
 
@@ -78,14 +102,24 @@ class LumenSync extends Command
                 ->table('categories')
                 ->select('id', 'name', 'parent_id', 'is_active')
                 ->get()
-                ->map(fn ($r) => (array) $r)
+                ->map(fn ($r) => [
+                    'erp_id'   => (string) $r->id,
+                    'name'     => $r->name,
+                    'parent_erp_id' => $r->parent_id ? (string) $r->parent_id : null,
+                    'is_active' => (bool) $r->is_active,
+                ])
                 ->all();
 
             $brands = DB::connection('lumen_runtime')
                 ->table('brands')
                 ->select('id', 'title', 'image')
                 ->get()
-                ->map(fn ($r) => ['id' => $r->id, 'name' => $r->title, 'image' => $r->image, 'is_active' => true])
+                ->map(fn ($r) => [
+                    'erp_id'   => (string) $r->id,
+                    'name'     => $r->title,
+                    'logo_url' => $r->image,
+                    'is_active' => true,
+                ])
                 ->all();
 
             $products = DB::connection('lumen_runtime')
@@ -97,7 +131,22 @@ class LumenSync extends Command
                     'featured', 'promotion', 'promotion_price', 'is_variant'
                 )
                 ->get()
-                ->map(fn ($r) => (array) $r)
+                ->map(fn ($r) => [
+                    'erp_id'      => (string) $r->id,
+                    'sku'         => $r->code,
+                    'name'        => $r->name,
+                    'description' => $r->product_details,
+                    'price'       => (float) $r->price,
+                    'cost'        => (float) $r->cost,
+                    'qty'         => (int) $r->qty,
+                    'image_url'   => $r->image,
+                    'category_erp_id' => $r->category_id ? (string) $r->category_id : null,
+                    'brand_erp_id'    => $r->brand_id ? (string) $r->brand_id : null,
+                    'is_featured' => (bool) $r->featured,
+                    'is_promotion' => (bool) $r->promotion,
+                    'promotion_price' => $r->promotion_price ? (float) $r->promotion_price : null,
+                    'is_active'   => true,
+                ])
                 ->all();
 
             return compact('categories', 'brands', 'products');
@@ -106,76 +155,5 @@ class LumenSync extends Command
             $this->warn('   Usando datos de muestra vacíos.');
             return ['categories' => [], 'brands' => [], 'products' => []];
         }
-    }
-
-    protected function syncCategories(array $items): int
-    {
-        $count = 0;
-        foreach ($items as $c) {
-            \App\Models\Category::updateOrCreate(
-                ['lumen_id' => $c['id']],
-                [
-                    'name'      => $c['name'],
-                    'slug'      => Str::slug($c['name']) . '-' . $c['id'],
-                    'is_active' => (bool) ($c['is_active'] ?? 1),
-                ]
-            );
-            $count++;
-        }
-        return $count;
-    }
-
-    protected function syncBrands(array $items): int
-    {
-        $count = 0;
-        foreach ($items as $b) {
-            \App\Models\Brand::updateOrCreate(
-                ['lumen_id' => $b['id']],
-                [
-                    'name'      => $b['name'],
-                    'slug'      => Str::slug($b['name']) . '-' . $b['id'],
-                    'logo_url'  => $b['image'] ?? null,
-                    'is_active' => (bool) ($b['is_active'] ?? 1),
-                ]
-            );
-            $count++;
-        }
-        return $count;
-    }
-
-    protected function syncProducts(array $items): int
-    {
-        $count = 0;
-        foreach ($items as $p) {
-            $categoryId = !empty($p['category_id'])
-                ? \App\Models\Category::where('lumen_id', $p['category_id'])->value('id')
-                : null;
-            $brandId = !empty($p['brand_id'])
-                ? \App\Models\Brand::where('lumen_id', $p['brand_id'])->value('id')
-                : null;
-
-            \App\Models\Product::updateOrCreate(
-                ['lumen_id' => $p['id']],
-                [
-                    'sku'         => $p['code'],
-                    'name'        => $p['name'],
-                    'slug'        => Str::slug($p['name']) . '-' . $p['id'],
-                    'description' => $p['product_details'] ?? null,
-                    'price'       => (float) ($p['price'] ?? 0),
-                    'cost'        => isset($p['cost']) ? (float) $p['cost'] : null,
-                    'qty'         => (int) ($p['qty'] ?? 0),
-                    'image_url'   => $p['image'] ?? null,
-                    'category_id' => $categoryId,
-                    'brand_id'    => $brandId,
-                    'is_featured' => (bool) ($p['featured'] ?? false),
-                    'is_promotion'=> (bool) ($p['promotion'] ?? false),
-                    'promotion_price' => isset($p['promotion_price']) ? (float) $p['promotion_price'] : null,
-                    'is_active'   => true,
-                    'synced_at'   => now(),
-                ]
-            );
-            $count++;
-        }
-        return $count;
     }
 }
