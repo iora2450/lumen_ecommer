@@ -27,6 +27,21 @@
     </div>
 </div>
 
+<div class="mt-6 grid gap-4 md:grid-cols-3">
+    <a href="{{ route('admin.products.index', ['status' => 'promotion']) }}" class="rounded-xl border border-slate-200 bg-white p-5 transition hover:border-[#FFAE00] hover:shadow-sm">
+        <p class="text-xs uppercase tracking-wide text-slate-500">Productos en oferta</p>
+        <p class="mt-2 text-2xl font-bold text-[#203749]">{{ $stats['promotion_products'] }}</p>
+    </a>
+    <a href="{{ route('admin.categories.index', ['status' => 'promotion']) }}" class="rounded-xl border border-slate-200 bg-white p-5 transition hover:border-[#FFAE00] hover:shadow-sm">
+        <p class="text-xs uppercase tracking-wide text-slate-500">Categorías en oferta</p>
+        <p class="mt-2 text-2xl font-bold text-[#203749]">{{ $stats['promotion_categories'] }}</p>
+    </a>
+    <a href="{{ route('admin.theme.edit') }}" class="rounded-xl border border-slate-200 bg-white p-5 transition hover:border-[#FFAE00] hover:shadow-sm">
+        <p class="text-xs uppercase tracking-wide text-slate-500">Tema visual</p>
+        <p class="mt-2 text-sm font-semibold text-[#203749]">Colores, home y contacto</p>
+    </a>
+</div>
+
 <div class="mt-8 grid gap-6 lg:grid-cols-2">
     {{-- Cotizaciones recientes --}}
     <div class="rounded-xl border border-slate-200 bg-white p-6">
@@ -50,7 +65,7 @@
                 @endforeach
             </div>
             <a href="{{ route('admin.quotes.index') }}" class="mt-4 block text-center text-sm font-semibold text-[#203749] hover:text-amber-600">
-                Ver todas →
+                Ver todas
             </a>
         @else
             <p class="text-sm text-slate-500">No hay cotizaciones aún.</p>
@@ -69,9 +84,9 @@
                 <div class="flex justify-between">
                     <span class="text-slate-500">Estado:</span>
                     <span class="font-medium">
-                        @if ($lastSync->status === 'success') ✅ Exitoso
-                        @elseif ($lastSync->status === 'failed') ❌ Falló
-                        @else ⏳ En progreso
+                        @if ($lastSync->status === 'success') Exitoso
+                        @elseif ($lastSync->status === 'failed') Falló
+                        @else En progreso
                         @endif
                     </span>
                 </div>
@@ -92,7 +107,7 @@
             <p class="text-sm text-slate-500">No se ha ejecutado sincronización aún.</p>
         @endif
         <a href="{{ route('admin.sync.index') }}" class="mt-4 block text-center text-sm font-semibold text-[#203749] hover:text-amber-600">
-            Ir a sync →
+            Ir a sync
         </a>
     </div>
 </div>

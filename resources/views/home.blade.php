@@ -7,11 +7,10 @@
 <section class="bg-gradient-to-br from-[#203749] to-[#1a2c3a] text-white">
     <div class="mx-auto max-w-7xl px-4 py-20 text-center">
         <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight">
-            Iluminación que <span class="text-[#FFAE00]">transforma</span> tus espacios
+            {{ $homeSettings['hero_title'] }}
         </h1>
         <p class="mt-5 text-lg text-slate-200 max-w-2xl mx-auto">
-            Soluciones LED certificadas para proyectos comerciales, industriales y residenciales.
-            Cotiza en minutos y recibe atención personalizada.
+            {{ $homeSettings['hero_subtitle'] }}
         </p>
         <div class="mt-8 flex justify-center gap-3 flex-wrap">
             <a href="{{ route('catalog.index') }}"
@@ -37,10 +36,18 @@
             <a href="{{ route('catalog.index', ['category' => $cat->slug]) }}"
                class="group rounded-2xl border border-slate-200 bg-white p-6 transition hover:border-[#FFAE00] hover:shadow-lg">
                 <div class="flex items-start justify-between">
-                    <h3 class="text-lg font-semibold text-[#203749] group-hover:text-amber-600">{{ $cat->name }}</h3>
-                    <span class="text-xs font-semibold text-slate-500 bg-slate-100 rounded-full px-2 py-1">
-                        {{ $cat->products_count }}
-                    </span>
+                    <div>
+                        <h3 class="text-lg font-semibold text-[#203749] group-hover:text-amber-600">{{ $cat->name }}</h3>
+                        <div class="mt-2 flex flex-wrap gap-1">
+                            @if ($cat->is_featured)
+                                <span class="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-800">Destacada</span>
+                            @endif
+                            @if ($cat->is_promotion)
+                                <span class="rounded-full bg-rose-100 px-2 py-1 text-[11px] font-bold text-rose-800">{{ $cat->promotion_label ?: 'Oferta' }}</span>
+                            @endif
+                        </div>
+                    </div>
+                    <span class="shrink-0 text-xs font-semibold text-slate-500 bg-slate-100 rounded-full px-2 py-1">{{ $cat->products_count }}</span>
                 </div>
                 <p class="mt-2 text-sm text-slate-600">{{ $cat->description }}</p>
             </a>

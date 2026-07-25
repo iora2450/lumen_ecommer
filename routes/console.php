@@ -15,6 +15,27 @@ Schedule::command('lumen:sync')
     ->onOneServer()
     ->runInBackground();
 
+// Pull HTTP desde ERP (configurable por .env)
+if ((bool) env('ERP_PULL_SCHEDULE_ENABLED', false)) {
+    Schedule::command('erp:pull --type=full')
+        ->dailyAt(env('ERP_PULL_FULL_AT', '03:00'))
+        ->withoutOverlapping()
+        ->onOneServer()
+        ->runInBackground();
+
+    Schedule::command('erp:pull --type=inventory')
+        ->cron(env('ERP_PULL_INVENTORY_CRON', '*/15 * * * *'))
+        ->withoutOverlapping()
+        ->onOneServer()
+        ->runInBackground();
+
+    Schedule::command('erp:pull --type=prices')
+        ->cron(env('ERP_PULL_PRICES_CRON', '0 * * * *'))
+        ->withoutOverlapping()
+        ->onOneServer()
+        ->runInBackground();
+}
+
 // Backup de cotizaciones diarias
 Schedule::call(function () {
     \Illuminate\Support\Facades\DB::table('quotes')

@@ -23,10 +23,19 @@ class SyncController extends Controller
      */
     public function health(): JsonResponse
     {
-        $last = Setting::get('sync_last_run');
+        $database = 'ok';
+        $last = null;
+
+        try {
+            $last = Setting::get('sync_last_run');
+        } catch (\Throwable $e) {
+            $database = 'error: ' . $e->getMessage();
+        }
+
         return response()->json([
-            'status'    => 'ok',
+            'status'    => $database === 'ok' ? 'ok' : 'degraded',
             'service'   => 'lumens-ecommerce',
+            'database'  => $database,
             'last_sync' => $last,
             'timestamp' => now()->toIso8601String(),
         ]);
@@ -190,9 +199,14 @@ class SyncController extends Controller
 
     protected function authenticate(Request $request): ?JsonResponse
     {
-        $expectedKey = (string) Setting::get('sync_api_key');
+        try {
+            $expectedKey = (string) Setting::get('sync_api_key', config('erp.api_key'));
+        } catch (\Throwable $e) {
+            $expectedKey = (string) config('erp.api_key');
+        }
+
         if (!$expectedKey) {
-            return response()->json(['success' => false, 'code' => 'server_error', 'message' => 'sync_api_key no configurado en la web.'], 500);
+            return response()->json(['success' => false, 'code' => 'server_error', 'message' => 'sync_api_key o ERP_API_KEY no configurado en la web.'], 500);
         }
 
         $bearer = $request->bearerToken();

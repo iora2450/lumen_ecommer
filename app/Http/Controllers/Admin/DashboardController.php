@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\Quote;
 use App\Models\SyncLog;
@@ -15,6 +16,8 @@ class DashboardController extends Controller
             'total_products'      => Product::count(),
             'active_products'     => Product::active()->count(),
             'featured_products'   => Product::featured()->count(),
+            'promotion_products'  => Product::active()->where('is_promotion', true)->count(),
+            'promotion_categories'=> Category::active()->where('is_promotion', true)->count(),
             'total_quotes'        => Quote::count(),
             'pending_quotes'      => Quote::pending()->count(),
             'low_stock_products'  => Product::active()->where('qty', '<', 10)->where('qty', '>', 0)->count(),

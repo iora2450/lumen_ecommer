@@ -12,10 +12,13 @@ class Category extends Model
     protected $fillable = [
         'lumen_id', 'name', 'slug', 'description', 'image_url',
         'parent_id', 'sort_order', 'is_active',
+        'is_featured', 'is_promotion', 'promotion_label',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_featured' => 'boolean',
+        'is_promotion' => 'boolean',
         'sort_order' => 'integer',
     ];
 

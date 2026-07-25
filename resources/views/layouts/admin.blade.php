@@ -19,16 +19,25 @@
             </div>
             <nav class="flex-1 p-3 space-y-1 text-sm">
                 <a href="{{ route('admin.dashboard') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.dashboard') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
-                    📊 Dashboard
+                    Dashboard
+                </a>
+                <a href="{{ route('admin.products.index') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.products.*') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
+                    Productos
+                </a>
+                <a href="{{ route('admin.categories.index') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.categories.*') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
+                    Categorías
                 </a>
                 <a href="{{ route('admin.quotes.index') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.quotes.*') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
-                    📨 Cotizaciones
+                    Cotizaciones
+                </a>
+                <a href="{{ route('admin.theme.edit') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.theme.*') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
+                    Tema y contacto
                 </a>
                 <a href="{{ route('admin.sync.index') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.sync.*') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
-                    🔄 Sincronización
+                    Sincronización
                 </a>
                 <a href="{{ route('home') }}" target="_blank" class="block rounded-lg px-3 py-2 hover:bg-slate-700">
-                    🌐 Ver sitio
+                    Ver sitio
                 </a>
             </nav>
             <div class="p-3 border-t border-slate-700 text-xs">
@@ -45,12 +54,17 @@
         <main class="flex-1 p-8">
             @if (session('success'))
                 <div class="mb-4 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-emerald-800">
-                    ✅ {{ session('success') }}
+                    {{ session('success') }}
                 </div>
             @endif
             @if (session('error'))
                 <div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-rose-800">
-                    ❌ {{ session('error') }}
+                    {{ session('error') }}
+                </div>
+            @endif
+            @if (isset($errors) && $errors->any())
+                <div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-rose-800">
+                    Revisa los campos marcados. {{ $errors->first() }}
                 </div>
             @endif
 
