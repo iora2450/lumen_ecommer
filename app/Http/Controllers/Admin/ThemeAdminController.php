@@ -13,7 +13,7 @@ class ThemeAdminController extends Controller
         $settings = [
             'site_name' => Setting::get('site_name', 'Lumens'),
             'primary_color' => Setting::get('primary_color', '#203749'),
-            'primary_dark_color' => Setting::get('primary_dark_color', '#1a2c3a'),
+            'primary_dark_color' => Setting::get('primary_dark_color', '#203749'),
             'accent_color' => Setting::get('accent_color', '#FFAE00'),
             'footer_email' => Setting::get('footer_email', 'ventas@lumens.local'),
             'footer_phone' => Setting::get('footer_phone', '+503 2222 3333'),

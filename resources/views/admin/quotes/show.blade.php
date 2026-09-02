@@ -37,6 +37,7 @@
         <div class="rounded-xl border border-slate-200 bg-white p-6">
             <h3 class="font-semibold text-[#203749] mb-4">Cliente</h3>
             <dl class="text-sm space-y-2">
+                <div><dt class="text-xs text-slate-500">Tipo de solicitud</dt><dd>{{ $quote->request_type_label }}</dd></div>
                 <div><dt class="text-xs text-slate-500">Nombre</dt><dd>{{ $quote->customer_name }}</dd></div>
                 <div><dt class="text-xs text-slate-500">Email</dt><dd>{{ $quote->customer_email }}</dd></div>
                 @if ($quote->customer_phone)<div><dt class="text-xs text-slate-500">Teléfono</dt><dd>{{ $quote->customer_phone }}</dd></div>@endif

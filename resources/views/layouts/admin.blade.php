@@ -27,6 +27,9 @@
                 <a href="{{ route('admin.categories.index') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.categories.*') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
                     Categorías
                 </a>
+                <a href="{{ route('admin.home-slides.index') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.home-slides.*') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
+                    Carrusel inicio
+                </a>
                 <a href="{{ route('admin.quotes.index') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.quotes.*') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
                     Cotizaciones
                 </a>

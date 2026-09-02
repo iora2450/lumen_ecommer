@@ -67,6 +67,7 @@ class ProductAdminController extends Controller
             'promotion_price' => ['nullable', 'numeric', 'min:0'],
             'promotion_starts_at' => ['nullable', 'date'],
             'promotion_ends_at' => ['nullable', 'date', 'after_or_equal:promotion_starts_at'],
+            'technical_specs' => ['nullable', 'string', 'max:6000'],
             'is_active' => ['nullable', 'boolean'],
             'is_featured' => ['nullable', 'boolean'],
             'is_promotion' => ['nullable', 'boolean'],
@@ -78,11 +79,38 @@ class ProductAdminController extends Controller
         $data['promotion_price'] = $data['is_promotion'] ? ($data['promotion_price'] ?? null) : null;
         $data['promotion_starts_at'] = $data['is_promotion'] ? ($data['promotion_starts_at'] ?? null) : null;
         $data['promotion_ends_at'] = $data['is_promotion'] ? ($data['promotion_ends_at'] ?? null) : null;
+        $data['specs'] = $this->parseTechnicalSpecs($data['technical_specs'] ?? null);
+        unset($data['technical_specs']);
 
         $product->update($data);
 
         return redirect()
             ->route('admin.products.edit', $product)
             ->with('success', 'Producto actualizado.');
+    }
+
+    private function parseTechnicalSpecs(?string $value): ?array
+    {
+        $lines = preg_split('/\R/', trim((string) $value));
+        $specs = [];
+
+        foreach ($lines ?: [] as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+
+            [$key, $specValue] = array_pad(preg_split('/\s*[:=-]\s*/', $line, 2), 2, '');
+            $key = trim($key);
+            $specValue = trim($specValue);
+
+            if ($key === '' || $specValue === '') {
+                continue;
+            }
+
+            $specs[$key] = $specValue;
+        }
+
+        return $specs ?: null;
     }
 }

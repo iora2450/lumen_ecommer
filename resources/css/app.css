@@ -9,12 +9,13 @@
     --color-lumens-navy: #203749;
     --color-lumens-yellow: #ffae00;
     --color-lumens-mist: #c8d3d7;
-    --color-lumens-ink: #142632;
+    --color-lumens-ink: #000000;
+    --color-lumens-paper: #f4f7f8;
 }
 
 @layer base {
     html { scroll-behavior: smooth; }
-    body { background: #f7f9fa; color: var(--color-lumens-ink); }
+    body { background: color-mix(in srgb, var(--color-lumens-mist) 24%, white); color: var(--color-lumens-ink); }
     button, a { -webkit-tap-highlight-color: transparent; }
 }
 
@@ -29,5 +30,18 @@
             linear-gradient(rgba(255, 255, 255, .05) 1px, transparent 1px),
             linear-gradient(90deg, rgba(255, 255, 255, .05) 1px, transparent 1px);
         background-size: 34px 34px;
+    }
+
+    .lumens-card {
+        border-color: color-mix(in srgb, var(--lumens-mist, #c8d3d7) 70%, white);
+        background: color-mix(in srgb, white 94%, var(--lumens-mist, #c8d3d7));
+    }
+
+    .lumens-muted {
+        color: color-mix(in srgb, var(--lumens-primary, #203749) 68%, white);
+    }
+
+    .lumens-ring {
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--lumens-mist, #c8d3d7) 70%, white);
     }
 }

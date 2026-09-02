@@ -40,7 +40,7 @@
                     Recordarme
                 </label>
                 <button type="submit"
-                        class="w-full rounded-lg bg-[#203749] text-white py-2.5 font-semibold hover:bg-[#1a2c3a]">
+                        class="w-full rounded-lg bg-[#203749] text-white py-2.5 font-semibold hover:bg-black">
                     Iniciar sesión
                 </button>
             </form>

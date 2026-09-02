@@ -13,8 +13,11 @@ class Quote extends Model
     public const STATUS_RESPONDED = 'responded';
     public const STATUS_CLOSED    = 'closed';
 
+    public const TYPE_QUOTE = 'quote';
+    public const TYPE_PURCHASE = 'purchase';
+
     protected $fillable = [
-        'quote_number', 'customer_name', 'customer_email',
+        'quote_number', 'request_type', 'customer_name', 'customer_email',
         'customer_phone', 'customer_company', 'shipping_address',
         'subtotal', 'notes', 'status',
     ];
@@ -40,5 +43,10 @@ class Quote extends Model
     public function scopePending($query)
     {
         return $query->where('status', self::STATUS_PENDING);
+    }
+
+    public function getRequestTypeLabelAttribute(): string
+    {
+        return $this->request_type === self::TYPE_PURCHASE ? 'Compra' : 'Cotización';
     }
 }

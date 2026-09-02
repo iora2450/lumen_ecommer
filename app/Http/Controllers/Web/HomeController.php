@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\HomeSlide;
 use App\Models\Product;
 use App\Models\Setting;
 
@@ -17,11 +18,9 @@ class HomeController extends Controller
             ->limit(6)
             ->get();
 
-        $categories = Category::active()
-            ->withCount(['products' => fn ($q) => $q->active()])
-            ->orderByDesc('is_featured')
+        $homeSlides = HomeSlide::active()
             ->orderBy('sort_order')
-            ->orderBy('name')
+            ->orderBy('title')
             ->get();
 
         $homeSettings = [
@@ -29,7 +28,7 @@ class HomeController extends Controller
             'hero_subtitle' => Setting::get('home_hero_subtitle', 'Soluciones LED certificadas para proyectos comerciales, industriales y residenciales.'),
         ];
 
-        return view('home', compact('featuredProducts', 'categories', 'homeSettings'));
+        return view('home', compact('featuredProducts', 'homeSlides', 'homeSettings'));
     }
 
     public function catalog()

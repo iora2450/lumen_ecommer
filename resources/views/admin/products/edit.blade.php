@@ -54,6 +54,19 @@
                 </label>
             </div>
         </section>
+
+        <section class="rounded-xl border border-slate-200 bg-white p-5">
+            <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-slate-500">Especificaciones técnicas</h2>
+            <label class="grid gap-2 text-sm font-semibold text-slate-700">
+                Ficha técnica
+                <textarea name="technical_specs" rows="8"
+                          placeholder="Potencia: 40W&#10;Voltaje: 120-277V&#10;Temperatura: 4000K&#10;Protección: IP65"
+                          class="rounded-lg border border-slate-300 px-3 py-2 font-normal leading-relaxed focus:border-[#FFAE00] focus:outline-none">{{ old('technical_specs', collect($product->specs ?? [])->map(fn ($value, $key) => $key . ': ' . $value)->implode("\n")) }}</textarea>
+            </label>
+            <p class="mt-2 text-xs text-slate-500">
+                Deja este espacio preparado aunque todavía no tengas la información. Luego se puede completar desde aquí o desde la sincronización.
+            </p>
+        </section>
     </div>
 
     <aside class="space-y-5">

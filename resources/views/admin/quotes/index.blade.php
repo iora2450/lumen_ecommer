@@ -21,6 +21,7 @@
         <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
             <tr>
                 <th class="px-4 py-3">#</th>
+                <th class="px-4 py-3">Tipo</th>
                 <th class="px-4 py-3">Cliente</th>
                 <th class="px-4 py-3">Fecha</th>
                 <th class="px-4 py-3">Items</th>
@@ -33,6 +34,11 @@
             @forelse ($quotes as $q)
                 <tr class="hover:bg-slate-50">
                     <td class="px-4 py-3 font-mono text-xs">{{ $q->quote_number }}</td>
+                    <td class="px-4 py-3">
+                        <span class="rounded-full {{ $q->request_type === 'purchase' ? 'bg-[#203749] text-white' : 'bg-[#FFAE00]/20 text-[#203749]' }} px-2 py-0.5 text-xs font-bold">
+                            {{ $q->request_type_label }}
+                        </span>
+                    </td>
                     <td class="px-4 py-3">
                         <p class="font-medium">{{ $q->customer_name }}</p>
                         <p class="text-xs text-slate-500">{{ $q->customer_email }}</p>
@@ -54,7 +60,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="7" class="px-4 py-12 text-center text-slate-500">No hay cotizaciones.</td></tr>
+                <tr><td colspan="8" class="px-4 py-12 text-center text-slate-500">No hay cotizaciones.</td></tr>
             @endforelse
         </tbody>
     </table>
