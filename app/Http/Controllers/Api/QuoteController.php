@@ -32,11 +32,13 @@ class QuoteController extends Controller
         try {
             $quote = DB::transaction(function () use ($validated) {
                 $quote = Quote::create([
+                    'request_type' => Quote::TYPE_QUOTE,
                     'customer_name' => $validated['customer_name'],
                     'customer_email' => $validated['customer_email'],
                     'customer_phone' => $validated['customer_phone'] ?? null,
                     'customer_company' => $validated['customer_company'] ?? null,
                     'shipping_address' => $validated['shipping_address'] ?? null,
+                    'payment_status' => Quote::PAYMENT_NOT_APPLICABLE,
                     'notes' => $validated['notes'] ?? null,
                     'status' => Quote::STATUS_PENDING,
                     'subtotal' => 0,
@@ -47,12 +49,20 @@ class QuoteController extends Controller
                     if (! empty($item['variant_id'])) {
                         $variant = ProductVariant::findOrFail($item['variant_id']);
                         $product = $variant->product;
+
+                        if (! $variant->is_active || ! $product?->is_active) {
+                            throw new \RuntimeException('Product unavailable.');
+                        }
                         $sku = $variant->sku;
                         $name = $product->name.' — '.$variant->name;
                         $price = $variant->price;
                         $attributes = $variant->attributes;
                     } else {
                         $product = Product::findOrFail($item['product_id']);
+
+                        if (! $product->is_active) {
+                            throw new \RuntimeException('Product unavailable.');
+                        }
                         $sku = $product->sku;
                         $name = $product->name;
                         $price = $product->effective_price;

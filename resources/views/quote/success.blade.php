@@ -1,71 +1,103 @@
 @extends('layouts.app')
-@section('title', 'Cotización recibida | Lumens')
+@section('title', $quote->request_type_label.' recibida | Lumens')
 
 @section('content')
-<div class="mx-auto max-w-3xl px-4 py-12">
-    <div class="rounded-2xl border border-[#C8D3D7] bg-white p-8 text-center shadow-sm">
-        <div class="mx-auto size-16 grid place-items-center rounded-full bg-[#FFAE00] text-[#203749] text-3xl">✓</div>
-        <h1 class="mt-4 text-2xl font-bold text-[#203749]">¡{{ $quote->request_type_label }} recibida!</h1>
-        <p class="mt-2 text-[#203749]/80">
-            Tu número de solicitud es:
-            <span class="font-mono font-bold">{{ $quote->quote_number }}</span>
-        </p>
-        <p class="mt-2 text-sm text-[#203749]/65">
-            Nos pondremos en contacto contigo a <strong>{{ $quote->customer_email }}</strong> en menos de 24 horas.
-        </p>
+@php($isPurchase = $quote->request_type === App\Models\Quote::TYPE_PURCHASE)
+<div class="mx-auto max-w-4xl px-4 py-10 sm:py-14">
+    <div class="mb-7 flex flex-wrap items-center justify-center gap-2 text-xs font-bold uppercase tracking-wide text-brand/55" aria-label="Progreso completado">
+        <span class="inline-flex size-7 items-center justify-center rounded-full bg-emerald-600 text-white">✓</span>
+        <span>Carrito revisado</span>
+        <span class="h-px w-8 bg-mist"></span>
+        <span class="inline-flex size-7 items-center justify-center rounded-full bg-emerald-600 text-white">✓</span>
+        <span>Datos recibidos</span>
+        <span class="h-px w-8 bg-mist"></span>
+        <span class="inline-flex size-7 items-center justify-center rounded-full bg-brand text-white">3</span>
+        <span class="text-brand">Confirmación</span>
     </div>
 
-    <div class="mt-8 rounded-2xl border border-[#C8D3D7]/70 bg-white p-8">
-        <h2 class="text-lg font-semibold text-[#203749]">Resumen</h2>
-        <div class="mt-4 grid gap-3 text-sm">
-            <div class="grid grid-cols-3">
-                <span class="text-[#203749]/60">Cliente:</span>
-                <span class="col-span-2 font-medium">{{ $quote->customer_name }}</span>
+    <section class="overflow-hidden rounded-3xl border border-mist bg-white shadow-sm">
+        <div class="bg-brand px-6 py-9 text-center text-white sm:px-10">
+            <div class="mx-auto grid size-16 place-items-center rounded-full bg-accent text-3xl font-black text-brand">✓</div>
+            <p class="mt-5 text-xs font-bold uppercase tracking-[0.2em] text-accent">Solicitud registrada</p>
+            <h1 class="mt-2 text-2xl font-extrabold sm:text-3xl">
+                {{ $isPurchase ? 'Tu solicitud de compra fue recibida' : 'Tu cotización fue recibida' }}
+            </h1>
+            <p class="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-white/75">
+                @if ($isPurchase)
+                    No hemos realizado ningún cobro. Ventas confirmará existencias, entrega y forma de pago antes de procesar el pedido.
+                @else
+                    Nuestro equipo revisará precios, existencias y condiciones para enviarte una respuesta formal.
+                @endif
+            </p>
+            <div class="mx-auto mt-6 inline-flex items-center gap-3 rounded-full bg-white/10 px-5 py-2.5">
+                <span class="text-xs text-white/60">Número de seguimiento</span>
+                <strong class="font-mono text-sm text-accent">{{ $quote->quote_number }}</strong>
             </div>
-            @if ($quote->customer_company)
-                <div class="grid grid-cols-3">
-                    <span class="text-[#203749]/60">Empresa:</span>
-                    <span class="col-span-2 font-medium">{{ $quote->customer_company }}</span>
+        </div>
+
+        <div class="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1fr_280px]">
+            <div>
+                <div class="flex items-center justify-between gap-3">
+                    <h2 class="text-lg font-extrabold text-brand">Productos solicitados</h2>
+                    <span class="rounded-full bg-mist/25 px-3 py-1 text-xs font-bold text-brand">{{ $quote->items->sum('qty') }} unidades</span>
                 </div>
-            @endif
-            <div class="grid grid-cols-3">
-                <span class="text-[#203749]/60">Estado:</span>
-                <span class="col-span-2"><span class="rounded-full bg-[#FFAE00]/20 text-[#203749] px-2 py-0.5 text-xs font-semibold">Pendiente</span></span>
-            </div>
-            <div class="grid grid-cols-3">
-                <span class="text-[#203749]/60">Tipo:</span>
-                <span class="col-span-2 font-medium">{{ $quote->request_type_label }}</span>
-            </div>
-        </div>
-
-        <div class="mt-6">
-            <h3 class="text-sm font-semibold text-[#203749] mb-3">Productos cotizados</h3>
-            <div class="rounded-lg border border-[#C8D3D7]/70 divide-y divide-[#C8D3D7]/70">
-                @foreach ($quote->items as $item)
-                    <div class="grid grid-cols-[1fr_auto_auto] gap-3 p-3 text-sm">
-                        <div>
-                            <p class="font-medium text-[#203749]">{{ $item->name }}</p>
-                            <p class="text-xs text-[#203749]/60 font-mono">{{ $item->sku }}</p>
+                <div class="mt-4 divide-y divide-mist/70 rounded-2xl border border-mist/70">
+                    @foreach ($quote->items as $item)
+                        <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-4 p-4 text-sm sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                            <div class="min-w-0">
+                                <p class="font-bold text-brand">{{ $item->name }}</p>
+                                <p class="mt-0.5 truncate font-mono text-xs text-brand/55">{{ $item->sku }}</p>
+                            </div>
+                            <span class="text-brand/70">{{ $item->qty }} × ${{ number_format((float) $item->price, 2) }}</span>
+                            <span class="col-span-2 text-right font-black text-brand sm:col-span-1">${{ number_format((float) $item->subtotal, 2) }}</span>
                         </div>
-                        <span class="text-[#203749]/70">{{ $item->qty }} × ${{ number_format((float) $item->price, 2) }}</span>
-                        <span class="font-semibold text-[#203749]">${{ number_format((float) $item->subtotal, 2) }}</span>
-                    </div>
-                @endforeach
+                    @endforeach
+                </div>
+                <div class="mt-4 flex items-center justify-between rounded-2xl bg-mist/20 px-5 py-4 text-brand">
+                    <span class="text-sm font-semibold">Total estimado</span>
+                    <span class="text-2xl font-black">${{ number_format((float) $quote->subtotal, 2) }}</span>
+                </div>
+                <p class="mt-2 text-xs leading-relaxed text-brand/55">El total queda sujeto a validación de existencias, entrega, impuestos y condiciones comerciales.</p>
             </div>
-            <div class="mt-4 flex justify-between text-lg font-bold text-[#203749]">
-                <span>Total estimado:</span>
-                <span>${{ number_format((float) $quote->subtotal, 2) }}</span>
-            </div>
-        </div>
 
-        <div class="mt-6 flex gap-3 justify-center">
-            <a href="{{ route('home') }}" class="inline-flex h-10 items-center rounded-full border border-[#C8D3D7] px-5 text-sm font-semibold text-[#203749] hover:bg-[#C8D3D7]/25">
-                Volver al inicio
-            </a>
-            <a href="{{ route('catalog.index') }}" class="inline-flex h-10 items-center rounded-full bg-[#203749] px-5 text-sm font-semibold text-white hover:bg-black">
-                Seguir explorando
-            </a>
+            <aside class="space-y-5">
+                <div class="rounded-2xl border border-mist/70 p-5">
+                    <h2 class="text-sm font-extrabold text-brand">Datos de seguimiento</h2>
+                    <dl class="mt-4 space-y-3 text-sm">
+                        <div>
+                            <dt class="text-xs text-brand/55">Cliente</dt>
+                            <dd class="mt-0.5 font-semibold text-brand">{{ $quote->customer_name }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-brand/55">Correo</dt>
+                            <dd class="mt-0.5 break-all font-semibold text-brand">{{ $quote->customer_email }}</dd>
+                        </div>
+                        @if ($quote->delivery_method_label)
+                            <div>
+                                <dt class="text-xs text-brand/55">Entrega</dt>
+                                <dd class="mt-0.5 font-semibold text-brand">{{ $quote->delivery_method_label }}</dd>
+                            </div>
+                        @endif
+                        @if ($isPurchase)
+                            <div>
+                                <dt class="text-xs text-brand/55">Pago</dt>
+                                <dd class="mt-0.5 font-semibold text-brand">{{ $quote->payment_status_label }}</dd>
+                            </div>
+                        @endif
+                    </dl>
+                </div>
+
+                <div class="rounded-2xl border border-accent/40 bg-accent/10 p-5 text-sm leading-relaxed text-brand">
+                    <strong>¿Qué sigue?</strong>
+                    <p class="mt-1">Te contactaremos a <span class="font-semibold">{{ $quote->customer_email }}</span> para continuar.</p>
+                </div>
+            </aside>
         </div>
+    </section>
+
+    <div class="mt-7 flex flex-wrap justify-center gap-3">
+        <a href="{{ route('home') }}" class="inline-flex h-11 items-center rounded-full border border-mist bg-white px-5 text-sm font-bold text-brand hover:bg-mist/25">Volver al inicio</a>
+        <a href="{{ route('catalog.index') }}" class="inline-flex h-11 items-center rounded-full bg-brand px-5 text-sm font-bold text-white hover:bg-black">Seguir explorando</a>
     </div>
 </div>
 @endsection

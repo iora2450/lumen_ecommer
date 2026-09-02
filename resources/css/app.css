@@ -6,16 +6,20 @@
 
 @theme {
     --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif;
-    --color-lumens-navy: #203749;
-    --color-lumens-yellow: #ffae00;
-    --color-lumens-mist: #c8d3d7;
     --color-lumens-ink: #000000;
     --color-lumens-paper: #f4f7f8;
 }
 
+@theme inline {
+    --color-brand: var(--lumens-primary, #203749);
+    --color-brand-dark: var(--lumens-primary-dark, #203749);
+    --color-accent: var(--lumens-accent, #ffae00);
+    --color-mist: var(--lumens-mist, #c8d3d7);
+}
+
 @layer base {
     html { scroll-behavior: smooth; }
-    body { background: color-mix(in srgb, var(--color-lumens-mist) 24%, white); color: var(--color-lumens-ink); }
+    body { background: color-mix(in srgb, var(--lumens-mist, #c8d3d7) 24%, white); color: var(--color-lumens-ink); }
     button, a { -webkit-tap-highlight-color: transparent; }
 }
 
@@ -38,7 +42,7 @@
     }
 
     .lumens-muted {
-        color: color-mix(in srgb, var(--lumens-primary, #203749) 68%, white);
+        color: color-mix(in srgb, var(--lumens-primary, #203749) 68%, transparent);
     }
 
     .lumens-ring {

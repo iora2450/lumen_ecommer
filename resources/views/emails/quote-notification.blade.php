@@ -41,6 +41,18 @@
                         <td style="padding:6px 0;">{{ $quote->shipping_address }}</td>
                     </tr>
                 @endif
+                @if ($quote->delivery_method_label)
+                    <tr>
+                        <td style="padding:6px 0;color:#6d7d86;">Entrega</td>
+                        <td style="padding:6px 0;">{{ $quote->delivery_method_label }}</td>
+                    </tr>
+                @endif
+                @if ($quote->payment_status_label)
+                    <tr>
+                        <td style="padding:6px 0;color:#6d7d86;">Pago</td>
+                        <td style="padding:6px 0;">{{ $quote->payment_status_label }}</td>
+                    </tr>
+                @endif
             </table>
 
             <h2 style="margin:0 0 12px;font-size:18px;">Productos solicitados</h2>

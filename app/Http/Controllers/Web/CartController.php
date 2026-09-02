@@ -10,6 +10,7 @@ use App\Models\QuoteItem;
 use App\Services\Quotes\QuoteEmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class CartController extends Controller
 {
@@ -25,6 +26,8 @@ class CartController extends Controller
 
     public function add(Request $request, Product $product)
     {
+        abort_unless($product->is_active, 404);
+
         $data = $request->validate([
             'qty' => ['nullable', 'integer', 'min:1', 'max:10000'],
             'variant_id' => ['nullable', 'exists:product_variants,id'],
@@ -34,7 +37,9 @@ class CartController extends Controller
         $key = 'product-'.$product->id;
 
         if (! empty($data['variant_id'])) {
-            $variant = ProductVariant::where('product_id', $product->id)->findOrFail($data['variant_id']);
+            $variant = ProductVariant::where('product_id', $product->id)
+                ->where('is_active', true)
+                ->findOrFail($data['variant_id']);
             $key = 'variant-'.$variant->id;
         }
 
@@ -89,6 +94,19 @@ class CartController extends Controller
 
     public function checkout(Request $request)
     {
+        $quantityData = $request->validate([
+            'items' => ['nullable', 'array'],
+            'items.*.qty' => ['required', 'integer', 'min:0', 'max:10000'],
+        ], [
+            'items.*.qty.integer' => 'Cada cantidad debe ser un número entero.',
+            'items.*.qty.min' => 'Las cantidades no pueden ser negativas.',
+            'items.*.qty.max' => 'La cantidad máxima por producto es 10,000.',
+        ]);
+
+        if (! empty($quantityData['items'])) {
+            $this->applyQuantities($request, $quantityData['items']);
+        }
+
         $cart = $this->cartItems($request);
 
         if (count($cart['items']) === 0) {
@@ -99,10 +117,21 @@ class CartController extends Controller
             'request_type' => ['required', 'in:quote,purchase'],
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_email' => ['required', 'email', 'max:255'],
-            'customer_phone' => ['nullable', 'string', 'max:30'],
+            'customer_phone' => ['nullable', 'required_if:request_type,purchase', 'string', 'max:30'],
             'customer_company' => ['nullable', 'string', 'max:255'],
-            'shipping_address' => ['nullable', 'string', 'max:1000'],
+            'delivery_method' => ['nullable', 'required_if:request_type,purchase', Rule::in([
+                Quote::DELIVERY_ADDRESS,
+                Quote::DELIVERY_PICKUP,
+            ])],
+            'shipping_address' => ['nullable', 'required_if:delivery_method,'.Quote::DELIVERY_ADDRESS, 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:2000'],
+        ], [
+            'customer_name.required' => 'El nombre completo es obligatorio.',
+            'customer_email.required' => 'El correo electrónico es obligatorio.',
+            'customer_email.email' => 'Ingresa un correo electrónico válido.',
+            'customer_phone.required_if' => 'El teléfono es obligatorio para confirmar una compra.',
+            'delivery_method.required_if' => 'Selecciona entrega a domicilio o retiro en tienda.',
+            'shipping_address.required_if' => 'La dirección es obligatoria para la entrega a domicilio.',
         ]);
 
         $quote = DB::transaction(function () use ($validated, $cart) {
@@ -112,7 +141,18 @@ class CartController extends Controller
                 'customer_email' => $validated['customer_email'],
                 'customer_phone' => $validated['customer_phone'] ?? null,
                 'customer_company' => $validated['customer_company'] ?? null,
-                'shipping_address' => $validated['shipping_address'] ?? null,
+                'shipping_address' => ($validated['delivery_method'] ?? null) === Quote::DELIVERY_ADDRESS
+                    ? ($validated['shipping_address'] ?? null)
+                    : null,
+                'delivery_method' => $validated['request_type'] === Quote::TYPE_PURCHASE
+                    ? $validated['delivery_method']
+                    : null,
+                'payment_method' => $validated['request_type'] === Quote::TYPE_PURCHASE
+                    ? Quote::PAYMENT_PENDING_COORDINATION
+                    : null,
+                'payment_status' => $validated['request_type'] === Quote::TYPE_PURCHASE
+                    ? Quote::PAYMENT_PENDING_COORDINATION
+                    : Quote::PAYMENT_NOT_APPLICABLE,
                 'notes' => $validated['notes'] ?? null,
                 'status' => Quote::STATUS_PENDING,
                 'subtotal' => 0,
@@ -162,7 +202,7 @@ class CartController extends Controller
             if (($entry['type'] ?? null) === 'variant') {
                 $variant = ProductVariant::with('product')->find($entry['id'] ?? null);
 
-                if ($variant && $variant->product?->is_active) {
+                if ($variant && $variant->is_active && $variant->product?->is_active) {
                     $item = [
                         'key' => $key,
                         'product_id' => $variant->product_id,
@@ -173,6 +213,7 @@ class CartController extends Controller
                         'qty' => $qty,
                         'image_url' => $variant->product->display_image_url,
                         'attributes' => $variant->attributes,
+                        'available_qty' => max(0, (int) $variant->qty),
                     ];
                 }
             } else {
@@ -189,6 +230,7 @@ class CartController extends Controller
                         'qty' => $qty,
                         'image_url' => $product->display_image_url,
                         'attributes' => null,
+                        'available_qty' => max(0, (int) $product->qty),
                     ];
                 }
             }
@@ -206,5 +248,26 @@ class CartController extends Controller
             'items' => $items,
             'subtotal' => round($subtotal, 2),
         ];
+    }
+
+    private function applyQuantities(Request $request, array $items): void
+    {
+        $cart = $request->session()->get('cart.items', []);
+
+        foreach ($items as $key => $item) {
+            if (! isset($cart[$key])) {
+                continue;
+            }
+
+            $qty = (int) $item['qty'];
+
+            if ($qty === 0) {
+                unset($cart[$key]);
+            } else {
+                $cart[$key]['qty'] = $qty;
+            }
+        }
+
+        $request->session()->put('cart.items', $cart);
     }
 }

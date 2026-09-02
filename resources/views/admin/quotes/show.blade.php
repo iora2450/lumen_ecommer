@@ -1,11 +1,11 @@
 @extends('layouts.admin')
-@section('title', 'Cotización ' . $quote->quote_number)
+@section('title', $quote->request_type_label . ' ' . $quote->quote_number)
 @section('subtitle', $quote->customer_name . ' — ' . $quote->created_at->format('d/m/Y H:i'))
 
 @section('content')
 <div class="grid gap-6 lg:grid-cols-3">
     <div class="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6">
-        <h3 class="font-semibold text-[#203749] mb-4">Productos cotizados</h3>
+        <h3 class="font-semibold text-[#203749] mb-4">Productos solicitados</h3>
         <div class="space-y-2">
             @foreach ($quote->items as $item)
                 <div class="flex items-center justify-between p-3 rounded-lg border border-slate-200">
@@ -43,6 +43,8 @@
                 @if ($quote->customer_phone)<div><dt class="text-xs text-slate-500">Teléfono</dt><dd>{{ $quote->customer_phone }}</dd></div>@endif
                 @if ($quote->customer_company)<div><dt class="text-xs text-slate-500">Empresa</dt><dd>{{ $quote->customer_company }}</dd></div>@endif
                 @if ($quote->shipping_address)<div><dt class="text-xs text-slate-500">Dirección</dt><dd>{{ $quote->shipping_address }}</dd></div>@endif
+                @if ($quote->delivery_method_label)<div><dt class="text-xs text-slate-500">Entrega</dt><dd>{{ $quote->delivery_method_label }}</dd></div>@endif
+                @if ($quote->payment_status_label)<div><dt class="text-xs text-slate-500">Pago</dt><dd>{{ $quote->payment_status_label }}</dd></div>@endif
             </dl>
         </div>
 

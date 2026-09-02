@@ -17,6 +17,12 @@
                 Tu solicitud <strong>{{ $quote->quote_number }}</strong> fue registrada correctamente. Nuestro equipo de ventas le dará seguimiento.
             </p>
 
+            @if ($quote->request_type === \App\Models\Quote::TYPE_PURCHASE)
+                <div style="margin:0 0 18px;padding:14px;background:#fff7df;border:1px solid #f0c75e;border-radius:8px;color:#203749;">
+                    <strong>No se realizó ningún cobro.</strong> Ventas confirmará existencias, entrega y forma de pago antes de procesar el pedido.
+                </div>
+            @endif
+
             <table style="width:100%;border-collapse:collapse;font-size:14px;">
                 <thead>
                     <tr>
@@ -42,6 +48,10 @@
             <p style="margin:18px 0 0;text-align:right;font-size:18px;font-weight:800;">
                 Total estimado: ${{ number_format((float) $quote->subtotal, 2) }}
             </p>
+
+            @if ($quote->delivery_method_label)
+                <p style="margin:14px 0 0;color:#4f6675;"><strong>Entrega:</strong> {{ $quote->delivery_method_label }}</p>
+            @endif
 
             @if ($quote->notes)
                 <div style="margin-top:18px;padding:14px;background:#f4f7f8;border-radius:8px;">

@@ -44,6 +44,12 @@ class QuoteController extends Controller
                     'customer_phone' => $validated['customer_phone'] ?? null,
                     'customer_company' => $validated['customer_company'] ?? null,
                     'shipping_address' => $validated['shipping_address'] ?? null,
+                    'payment_method' => ($validated['request_type'] ?? Quote::TYPE_QUOTE) === Quote::TYPE_PURCHASE
+                        ? Quote::PAYMENT_PENDING_COORDINATION
+                        : null,
+                    'payment_status' => ($validated['request_type'] ?? Quote::TYPE_QUOTE) === Quote::TYPE_PURCHASE
+                        ? Quote::PAYMENT_PENDING_COORDINATION
+                        : Quote::PAYMENT_NOT_APPLICABLE,
                     'notes' => $validated['notes'] ?? null,
                     'status' => Quote::STATUS_PENDING,
                     'subtotal' => 0,
@@ -55,12 +61,20 @@ class QuoteController extends Controller
                     if (! empty($item['variant_id'])) {
                         $variant = ProductVariant::findOrFail($item['variant_id']);
                         $product = $variant->product;
+
+                        if (! $variant->is_active || ! $product?->is_active) {
+                            throw new \RuntimeException('Uno de los productos ya no está disponible.');
+                        }
                         $sku = $variant->sku;
                         $name = $product->name.' — '.$variant->name;
                         $price = $variant->price;
                         $attributes = $variant->attributes;
                     } elseif (! empty($item['product_id'])) {
                         $product = Product::findOrFail($item['product_id']);
+
+                        if (! $product->is_active) {
+                            throw new \RuntimeException('Uno de los productos ya no está disponible.');
+                        }
                         $sku = $product->sku;
                         $name = $product->name;
                         $price = $product->effective_price;
@@ -108,9 +122,11 @@ class QuoteController extends Controller
                 ->route('quote.success', $quote->quote_number)
                 ->with('success', 'Cotización recibida correctamente.');
         } catch (\Throwable $e) {
+            report($e);
+
             return back()
                 ->withInput()
-                ->withErrors(['error' => 'No se pudo procesar la cotización: '.$e->getMessage()]);
+                ->withErrors(['error' => 'No se pudo procesar la cotización. Revisa los productos e inténtalo nuevamente.']);
         }
     }
 

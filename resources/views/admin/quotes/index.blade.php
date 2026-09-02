@@ -1,6 +1,6 @@
 @extends('layouts.admin')
-@section('title', 'Cotizaciones')
-@section('subtitle', 'Gestión de cotizaciones recibidas')
+@section('title', 'Solicitudes comerciales')
+@section('subtitle', 'Gestión de cotizaciones y solicitudes de compra')
 
 @section('content')
 {{-- Filtros --}}
@@ -60,7 +60,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="8" class="px-4 py-12 text-center text-slate-500">No hay cotizaciones.</td></tr>
+                <tr><td colspan="8" class="px-4 py-12 text-center text-slate-500">No hay solicitudes.</td></tr>
             @endforelse
         </tbody>
     </table>
