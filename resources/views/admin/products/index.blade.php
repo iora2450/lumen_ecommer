@@ -58,7 +58,15 @@
                                 <span class="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">Destacado</span>
                             @endif
                             @if ($product->is_promotion)
-                                <span class="rounded-full bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-800">Oferta</span>
+                                @php
+                                    $promotionClasses = match ($product->promotion_status) {
+                                        \App\Models\Product::PROMOTION_ACTIVE => 'bg-emerald-100 text-emerald-800',
+                                        \App\Models\Product::PROMOTION_SCHEDULED => 'bg-sky-100 text-sky-800',
+                                        \App\Models\Product::PROMOTION_EXPIRED => 'bg-slate-100 text-slate-600',
+                                        default => 'bg-rose-100 text-rose-800',
+                                    };
+                                @endphp
+                                <span class="rounded-full px-2 py-1 text-xs font-semibold {{ $promotionClasses }}">{{ $product->promotion_status_label }}</span>
                             @endif
                         </div>
                     </td>

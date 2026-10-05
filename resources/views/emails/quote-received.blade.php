@@ -23,6 +23,12 @@
                 </div>
             @endif
 
+            @if ($quote->requires_fiscal_credit)
+                <div style="margin:0 0 18px;padding:14px;background:#fff7df;border:1px solid #f0c75e;border-radius:8px;color:#203749;">
+                    <strong>Crédito fiscal solicitado.</strong> Recibimos los datos de {{ $quote->fiscal_legal_name }} para preparar el DTE. Nuestro equipo los validará antes de emitirlo.
+                </div>
+            @endif
+
             <table style="width:100%;border-collapse:collapse;font-size:14px;">
                 <thead>
                     <tr>
@@ -45,9 +51,13 @@
                 </tbody>
             </table>
 
-            <p style="margin:18px 0 0;text-align:right;font-size:18px;font-weight:800;">
-                Total estimado: ${{ number_format((float) $quote->subtotal, 2) }}
-            </p>
+            <div style="margin:18px 0 0;text-align:right;">
+                <p style="margin:0;font-size:14px;">Subtotal: ${{ number_format((float) $quote->subtotal, 2) }}</p>
+                @if ((float) $quote->discount_amount > 0)
+                    <p style="margin:4px 0;color:#047857;font-size:14px;">Cupón {{ $quote->coupon_code }}: −${{ number_format((float) $quote->discount_amount, 2) }}</p>
+                @endif
+                <p style="margin:6px 0 0;font-size:18px;font-weight:800;">Total estimado: ${{ number_format((float) $quote->total, 2) }}</p>
+            </div>
 
             @if ($quote->delivery_method_label)
                 <p style="margin:14px 0 0;color:#4f6675;"><strong>Entrega:</strong> {{ $quote->delivery_method_label }}</p>

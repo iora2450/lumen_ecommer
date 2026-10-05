@@ -55,6 +55,25 @@
                 @endif
             </table>
 
+            @if ($quote->requires_fiscal_credit)
+                <div style="margin:0 0 22px;padding:16px;border:2px solid #FFAE00;background:#fff8e6;border-radius:10px;">
+                    <h2 style="margin:0 0 4px;font-size:18px;">Crédito fiscal solicitado</h2>
+                    <p style="margin:0 0 12px;color:#6d7d86;font-size:13px;">Datos del receptor para preparar el DTE.</p>
+                    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                        <tr><td style="padding:4px 0;color:#6d7d86;width:150px;">Razón social</td><td style="padding:4px 0;"><strong>{{ $quote->fiscal_legal_name }}</strong></td></tr>
+                        <tr><td style="padding:4px 0;color:#6d7d86;">NIT</td><td style="padding:4px 0;">{{ $quote->fiscal_nit }}</td></tr>
+                        <tr><td style="padding:4px 0;color:#6d7d86;">NRC</td><td style="padding:4px 0;">{{ $quote->fiscal_nrc }}</td></tr>
+                        <tr><td style="padding:4px 0;color:#6d7d86;">Actividad</td><td style="padding:4px 0;">{{ $quote->fiscal_activity_code }} — {{ $quote->fiscal_activity_description }}</td></tr>
+                        <tr><td style="padding:4px 0;color:#6d7d86;">Departamento</td><td style="padding:4px 0;">{{ $quote->fiscal_department }} ({{ $quote->fiscal_department_code }})</td></tr>
+                        <tr><td style="padding:4px 0;color:#6d7d86;">Municipio</td><td style="padding:4px 0;">{{ $quote->fiscal_municipality }} ({{ $quote->fiscal_municipality_code }})</td></tr>
+                        <tr><td style="padding:4px 0;color:#6d7d86;">Distrito</td><td style="padding:4px 0;">{{ $quote->fiscal_district }} ({{ $quote->fiscal_district_code }})</td></tr>
+                        <tr><td style="padding:4px 0;color:#6d7d86;">Dirección fiscal</td><td style="padding:4px 0;">{{ $quote->fiscal_address }}</td></tr>
+                        <tr><td style="padding:4px 0;color:#6d7d86;">Teléfono DTE</td><td style="padding:4px 0;">{{ $quote->fiscal_phone }}</td></tr>
+                        <tr><td style="padding:4px 0;color:#6d7d86;">Correo DTE</td><td style="padding:4px 0;">{{ $quote->fiscal_email }}</td></tr>
+                    </table>
+                </div>
+            @endif
+
             <h2 style="margin:0 0 12px;font-size:18px;">Productos solicitados</h2>
             <table style="width:100%;border-collapse:collapse;font-size:14px;">
                 <thead>
@@ -78,9 +97,13 @@
                 </tbody>
             </table>
 
-            <p style="margin:18px 0 0;text-align:right;font-size:18px;font-weight:800;">
-                Total estimado: ${{ number_format((float) $quote->subtotal, 2) }}
-            </p>
+            <div style="margin:18px 0 0;text-align:right;">
+                <p style="margin:0;font-size:14px;">Subtotal: ${{ number_format((float) $quote->subtotal, 2) }}</p>
+                @if ((float) $quote->discount_amount > 0)
+                    <p style="margin:4px 0;color:#047857;font-size:14px;">Cupón {{ $quote->coupon_code }}: −${{ number_format((float) $quote->discount_amount, 2) }}</p>
+                @endif
+                <p style="margin:6px 0 0;font-size:18px;font-weight:800;">Total estimado: ${{ number_format((float) $quote->total, 2) }}</p>
+            </div>
 
             @if ($quote->notes)
                 <div style="margin-top:18px;padding:14px;background:#f4f7f8;border-radius:8px;">

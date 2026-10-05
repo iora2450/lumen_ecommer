@@ -13,7 +13,7 @@ class CatalogController extends Controller
     public function index(Request $request)
     {
         $query = Product::with(['category:id,name,slug', 'brand:id,name,slug', 'primaryImage'])
-            ->active();
+            ->visibleOnWeb();
 
         // Filtros
         if ($request->filled('category')) {
@@ -23,15 +23,15 @@ class CatalogController extends Controller
             $query->whereHas('brand', fn ($q) => $q->where('slug', $request->brand));
         }
         if ($request->filled('q')) {
-            $term = '%' . $request->q . '%';
+            $term = '%'.$request->q.'%';
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', $term)
-                  ->orWhere('description', 'like', $term)
-                  ->orWhere('sku', 'like', $term);
+                    ->orWhere('description', 'like', $term)
+                    ->orWhere('sku', 'like', $term);
             });
         }
         if ($request->boolean('on_sale')) {
-            $query->where('is_promotion', true)->whereNotNull('promotion_price');
+            $query->onSale();
         }
         if ($request->boolean('in_stock')) {
             $query->where('qty', '>', 0);
@@ -52,27 +52,53 @@ class CatalogController extends Controller
         $products = $query->paginate(12)->withQueryString();
 
         $categories = Category::active()
-            ->withCount(['products' => fn ($q) => $q->active()])
+            ->withCount(['products' => fn ($q) => $q->visibleOnWeb()])
             ->orderBy('sort_order')
             ->get();
 
         $brands = Brand::active()
-            ->withCount(['products' => fn ($q) => $q->active()])
+            ->withCount(['products' => fn ($q) => $q->visibleOnWeb()])
             ->orderBy('name')
             ->get();
 
         return view('catalog.index', compact('products', 'categories', 'brands'));
     }
 
+    public function offers(Request $request)
+    {
+        $query = Product::with(['category:id,name,slug', 'brand:id,name,slug', 'primaryImage'])
+            ->visibleOnWeb()
+            ->onSale();
+
+        if ($request->filled('category')) {
+            $query->whereHas('category', fn ($category) => $category->where('slug', $request->category));
+        }
+
+        $products = $query
+            ->orderByDesc('promotion_starts_at')
+            ->orderBy('name')
+            ->paginate(12)
+            ->withQueryString();
+
+        $categories = Category::active()
+            ->whereHas('products', fn ($products) => $products->visibleOnWeb()->onSale())
+            ->withCount(['products' => fn ($products) => $products->visibleOnWeb()->onSale()])
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        return view('offers.index', compact('products', 'categories'));
+    }
+
     public function show(string $slug)
     {
         $product = Product::with(['category', 'brand', 'images', 'variants' => fn ($q) => $q->where('is_active', true)])
             ->where('slug', $slug)
-            ->active()
+            ->visibleOnWeb()
             ->firstOrFail();
 
         $related = Product::with(['primaryImage'])
-            ->active()
+            ->visibleOnWeb()
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->limit(4)

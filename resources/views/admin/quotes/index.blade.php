@@ -1,6 +1,6 @@
 @extends('layouts.admin')
-@section('title', 'Solicitudes comerciales')
-@section('subtitle', 'Gestión de cotizaciones y solicitudes de compra')
+@section('title', 'Pedidos')
+@section('subtitle', 'Gestión de compras realizadas desde el carrito')
 
 @section('content')
 {{-- Filtros --}}
@@ -38,6 +38,9 @@
                         <span class="rounded-full {{ $q->request_type === 'purchase' ? 'bg-[#203749] text-white' : 'bg-[#FFAE00]/20 text-[#203749]' }} px-2 py-0.5 text-xs font-bold">
                             {{ $q->request_type_label }}
                         </span>
+                        @if ($q->requires_fiscal_credit)
+                            <span class="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800">CCF / DTE</span>
+                        @endif
                     </td>
                     <td class="px-4 py-3">
                         <p class="font-medium">{{ $q->customer_name }}</p>
@@ -45,7 +48,7 @@
                     </td>
                     <td class="px-4 py-3 text-xs">{{ $q->created_at->format('d/m/Y H:i') }}</td>
                     <td class="px-4 py-3 text-center">{{ $q->items->count() }}</td>
-                    <td class="px-4 py-3 text-right font-semibold">${{ number_format((float) $q->subtotal, 2) }}</td>
+                    <td class="px-4 py-3 text-right font-semibold">${{ number_format((float) $q->total, 2) }}</td>
                     <td class="px-4 py-3">
                         <span class="text-xs px-2 py-0.5 rounded-full
                             {{ $q->status === 'pending' ? 'bg-amber-100 text-amber-800' : '' }}
@@ -60,7 +63,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="8" class="px-4 py-12 text-center text-slate-500">No hay solicitudes.</td></tr>
+                <tr><td colspan="8" class="px-4 py-12 text-center text-slate-500">No hay pedidos.</td></tr>
             @endforelse
         </tbody>
     </table>

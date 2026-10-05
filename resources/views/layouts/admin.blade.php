@@ -27,14 +27,23 @@
                 <a href="{{ route('admin.categories.index') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.categories.*') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
                     Categorías
                 </a>
+                <a href="{{ route('admin.hero-slides.index') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.hero-slides.*') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
+                    Banner principal
+                </a>
                 <a href="{{ route('admin.home-slides.index') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.home-slides.*') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
-                    Carrusel inicio
+                    Banners de novedades
+                </a>
+                <a href="{{ route('admin.coupons.index') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.coupons.*') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
+                    Cupones de descuento
                 </a>
                 <a href="{{ route('admin.quotes.index') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.quotes.*') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
-                    Cotizaciones
+                    Pedidos
                 </a>
                 <a href="{{ route('admin.theme.edit') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.theme.*') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
-                    Tema y contacto
+                    Tema y portada
+                </a>
+                <a href="{{ route('admin.footer.edit') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.footer.*') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
+                    Pie de página
                 </a>
                 <a href="{{ route('admin.sync.index') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.sync.*') ? 'bg-[#FFAE00] text-[#203749] font-semibold' : 'hover:bg-slate-700' }}">
                     Sincronización

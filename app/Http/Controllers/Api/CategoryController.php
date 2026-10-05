@@ -11,7 +11,7 @@ class CategoryController extends Controller
     public function index(): JsonResponse
     {
         $categories = Category::active()
-            ->withCount(['products' => fn ($q) => $q->where('is_active', true)])
+            ->withCount(['products' => fn ($q) => $q->visibleOnWeb()])
             ->orderBy('sort_order')
             ->get();
 
@@ -27,7 +27,7 @@ class CategoryController extends Controller
 
         $products = $category->products()
             ->with(['brand:id,name,slug', 'primaryImage'])
-            ->active()
+            ->visibleOnWeb()
             ->paginate(12);
 
         return response()->json([

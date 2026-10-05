@@ -11,7 +11,7 @@ class BrandController extends Controller
     public function index(): JsonResponse
     {
         $brands = Brand::active()
-            ->withCount(['products' => fn ($q) => $q->where('is_active', true)])
+            ->withCount(['products' => fn ($q) => $q->visibleOnWeb()])
             ->orderBy('name')
             ->get();
 

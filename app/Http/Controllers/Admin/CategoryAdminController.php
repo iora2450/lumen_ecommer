@@ -13,7 +13,7 @@ class CategoryAdminController extends Controller
         $query = Category::withCount(['products' => fn ($q) => $q->active()]);
 
         if ($request->filled('q')) {
-            $term = '%' . $request->q . '%';
+            $term = '%'.$request->q.'%';
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', $term)
                     ->orWhere('description', 'like', $term);
@@ -48,7 +48,7 @@ class CategoryAdminController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'unique:categories,slug,' . $category->id],
+            'slug' => ['nullable', 'string', 'max:255', 'unique:categories,slug,'.$category->id],
             'description' => ['nullable', 'string'],
             'image_url' => ['nullable', 'string', 'max:2048'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
@@ -68,5 +68,21 @@ class CategoryAdminController extends Controller
         return redirect()
             ->route('admin.categories.edit', $category)
             ->with('success', 'Categoría actualizada.');
+    }
+
+    public function updateVisibility(Request $request, Category $category)
+    {
+        $data = $request->validate([
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $category->update(['is_active' => $data['is_active']]);
+
+        return back()->with(
+            'success',
+            $category->is_active
+                ? "La categoría {$category->name} ya aparece en la web."
+                : "La categoría {$category->name} y sus productos se ocultaron de la web."
+        );
     }
 }

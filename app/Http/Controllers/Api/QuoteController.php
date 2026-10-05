@@ -50,7 +50,8 @@ class QuoteController extends Controller
                         $variant = ProductVariant::findOrFail($item['variant_id']);
                         $product = $variant->product;
 
-                        if (! $variant->is_active || ! $product?->is_active) {
+                        if (! $variant->is_active || ! $product
+                            || ! Product::visibleOnWeb()->whereKey($product->getKey())->exists()) {
                             throw new \RuntimeException('Product unavailable.');
                         }
                         $sku = $variant->sku;
@@ -60,7 +61,7 @@ class QuoteController extends Controller
                     } else {
                         $product = Product::findOrFail($item['product_id']);
 
-                        if (! $product->is_active) {
+                        if (! Product::visibleOnWeb()->whereKey($product->getKey())->exists()) {
                             throw new \RuntimeException('Product unavailable.');
                         }
                         $sku = $product->sku;
@@ -85,7 +86,8 @@ class QuoteController extends Controller
                     ]);
                 }
 
-                $quote->update(['subtotal' => round($subtotal, 2)]);
+                $subtotal = round($subtotal, 2);
+                $quote->update(['subtotal' => $subtotal, 'total' => $subtotal]);
 
                 return $quote->load('items');
             });

@@ -12,7 +12,7 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Product::with(['category:id,name,slug', 'brand:id,name,slug', 'primaryImage'])
-            ->active();
+            ->visibleOnWeb();
 
         // Filtros
         if ($request->filled('category')) {
@@ -25,7 +25,7 @@ class ProductController extends Controller
             $query->featured();
         }
         if ($request->boolean('on_sale')) {
-            $query->where('is_promotion', true)->whereNotNull('promotion_price');
+            $query->onSale();
         }
         if ($request->boolean('in_stock')) {
             $query->inStock();
@@ -33,20 +33,20 @@ class ProductController extends Controller
 
         // Búsqueda
         if ($request->filled('q')) {
-            $term = '%' . $request->q . '%';
+            $term = '%'.$request->q.'%';
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', $term)
-                  ->orWhere('description', 'like', $term)
-                  ->orWhere('sku', 'like', $term);
+                    ->orWhere('description', 'like', $term)
+                    ->orWhere('sku', 'like', $term);
             });
         }
 
         // Ordenamiento
         $sort = $request->input('sort', 'name');
-        $query->when($sort === 'price_asc',  fn ($q) => $q->orderBy('price', 'asc'))
-              ->when($sort === 'price_desc', fn ($q) => $q->orderBy('price', 'desc'))
-              ->when($sort === 'name',        fn ($q) => $q->orderBy('name', 'asc'))
-              ->when($sort === 'newest',      fn ($q) => $q->orderByDesc('created_at'));
+        $query->when($sort === 'price_asc', fn ($q) => $q->orderBy('price', 'asc'))
+            ->when($sort === 'price_desc', fn ($q) => $q->orderBy('price', 'desc'))
+            ->when($sort === 'name', fn ($q) => $q->orderBy('name', 'asc'))
+            ->when($sort === 'newest', fn ($q) => $q->orderByDesc('created_at'));
 
         $perPage = min((int) $request->input('per_page', 12), 50);
         $products = $query->paginate($perPage);
@@ -58,7 +58,7 @@ class ProductController extends Controller
     {
         $product = Product::with(['category', 'brand', 'images', 'variants' => fn ($q) => $q->where('is_active', true)])
             ->where('slug', $slug)
-            ->active()
+            ->visibleOnWeb()
             ->firstOrFail();
 
         return response()->json([
@@ -70,6 +70,7 @@ class ProductController extends Controller
     {
         $products = Product::with(['category:id,name,slug', 'brand:id,name,slug', 'primaryImage'])
             ->featured()
+            ->visibleOnWeb()
             ->limit(8)
             ->get();
 

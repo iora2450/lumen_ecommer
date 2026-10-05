@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class HomeSlide extends Model
 {
     protected $fillable = [
         'badge',
+        'category_id',
         'title',
         'subtitle',
         'image_url',
@@ -25,6 +27,11 @@ class HomeSlide extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 
     public function getDisplayImageUrlAttribute(): string

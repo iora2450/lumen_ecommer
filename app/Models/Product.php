@@ -10,6 +10,16 @@ use Illuminate\Support\Str;
 
 class Product extends Model
 {
+    public const PROMOTION_INACTIVE = 'inactive';
+
+    public const PROMOTION_ACTIVE = 'active';
+
+    public const PROMOTION_SCHEDULED = 'scheduled';
+
+    public const PROMOTION_EXPIRED = 'expired';
+
+    public const PROMOTION_INVALID = 'invalid';
+
     protected $fillable = [
         'lumen_id', 'sku', 'name', 'slug',
         'short_description', 'description',
@@ -52,7 +62,7 @@ class Product extends Model
                 $product->slug = Str::slug($product->name);
             }
             if (empty($product->sku)) {
-                $product->sku = 'SKU-' . strtoupper(Str::random(8));
+                $product->sku = 'SKU-'.strtoupper(Str::random(8));
             }
         });
     }
@@ -99,18 +109,60 @@ class Product extends Model
 
     public function getEffectivePriceAttribute(): float
     {
-        $now = now();
-        $onPromo = $this->is_promotion
-            && $this->promotion_price
-            && (!$this->promotion_starts_at || $this->promotion_starts_at->lte($now))
-            && (!$this->promotion_ends_at || $this->promotion_ends_at->gte($now));
-
-        return $onPromo ? (float) $this->promotion_price : (float) $this->price;
+        return $this->promotion_status === self::PROMOTION_ACTIVE
+            ? (float) $this->promotion_price
+            : (float) $this->price;
     }
 
     public function getIsOnSaleAttribute(): bool
     {
-        return $this->effective_price < (float) $this->price;
+        return $this->promotion_status === self::PROMOTION_ACTIVE;
+    }
+
+    public function getPromotionStatusAttribute(): string
+    {
+        if (! $this->is_promotion) {
+            return self::PROMOTION_INACTIVE;
+        }
+
+        $price = (float) $this->price;
+        $promotionPrice = (float) $this->promotion_price;
+
+        if ($price <= 0 || $promotionPrice <= 0 || $promotionPrice >= $price) {
+            return self::PROMOTION_INVALID;
+        }
+
+        $now = now();
+
+        if ($this->promotion_starts_at && $this->promotion_starts_at->gt($now)) {
+            return self::PROMOTION_SCHEDULED;
+        }
+
+        if ($this->promotion_ends_at && $this->promotion_ends_at->lt($now)) {
+            return self::PROMOTION_EXPIRED;
+        }
+
+        return self::PROMOTION_ACTIVE;
+    }
+
+    public function getPromotionStatusLabelAttribute(): string
+    {
+        return match ($this->promotion_status) {
+            self::PROMOTION_ACTIVE => 'Oferta activa',
+            self::PROMOTION_SCHEDULED => 'Programada',
+            self::PROMOTION_EXPIRED => 'Vencida',
+            self::PROMOTION_INVALID => 'Revisar oferta',
+            default => 'Sin oferta',
+        };
+    }
+
+    public function getDiscountPercentageAttribute(): ?int
+    {
+        if (! $this->is_on_sale) {
+            return null;
+        }
+
+        return (int) round((1 - ((float) $this->promotion_price / (float) $this->price)) * 100);
     }
 
     public function getStockBadgeAttribute(): string
@@ -118,6 +170,7 @@ class Product extends Model
         if ($this->stock_status) {
             return $this->stock_status;
         }
+
         return match (true) {
             $this->qty <= 0 => 'out_of_stock',
             $this->qty < 10 => 'low_stock',
@@ -155,7 +208,7 @@ class Product extends Model
         $baseUrl = rtrim((string) config('erp.legacy_public_url'), '/');
         $imagePath = trim((string) config('erp.legacy_product_image_path'), '/');
 
-        return $baseUrl . '/' . $imagePath . '/' . $this->encodePath($image);
+        return $baseUrl.'/'.$imagePath.'/'.$this->encodePath($image);
     }
 
     protected function plainText(?string $value): ?string
@@ -178,15 +231,15 @@ class Product extends Model
     {
         $parts = parse_url($url);
 
-        if (!$parts || empty($parts['path'])) {
+        if (! $parts || empty($parts['path'])) {
             return $url;
         }
 
         $encodedPath = $this->encodePath($parts['path']);
-        $rebuilt = ($parts['scheme'] ?? 'http') . '://' . ($parts['host'] ?? '');
-        $rebuilt .= isset($parts['port']) ? ':' . $parts['port'] : '';
+        $rebuilt = ($parts['scheme'] ?? 'http').'://'.($parts['host'] ?? '');
+        $rebuilt .= isset($parts['port']) ? ':'.$parts['port'] : '';
         $rebuilt .= $encodedPath;
-        $rebuilt .= isset($parts['query']) ? '?' . $parts['query'] : '';
+        $rebuilt .= isset($parts['query']) ? '?'.$parts['query'] : '';
 
         return $rebuilt;
     }
@@ -203,6 +256,16 @@ class Product extends Model
         return $query->where('is_active', true);
     }
 
+    public function scopeVisibleOnWeb($query)
+    {
+        return $query
+            ->active()
+            ->where(function ($query) {
+                $query->whereNull('category_id')
+                    ->orWhereHas('category', fn ($category) => $category->active());
+            });
+    }
+
     public function scopeFeatured($query)
     {
         return $query->where('is_featured', true)->active();
@@ -211,5 +274,24 @@ class Product extends Model
     public function scopeInStock($query)
     {
         return $query->where('qty', '>', 0);
+    }
+
+    public function scopeOnSale($query, $at = null)
+    {
+        $at ??= now();
+
+        return $query
+            ->where('is_promotion', true)
+            ->whereNotNull('promotion_price')
+            ->where('promotion_price', '>', 0)
+            ->whereColumn('promotion_price', '<', 'price')
+            ->where(function ($query) use ($at) {
+                $query->whereNull('promotion_starts_at')
+                    ->orWhere('promotion_starts_at', '<=', $at);
+            })
+            ->where(function ($query) use ($at) {
+                $query->whereNull('promotion_ends_at')
+                    ->orWhere('promotion_ends_at', '>=', $at);
+            });
     }
 }

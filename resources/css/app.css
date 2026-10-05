@@ -48,4 +48,92 @@
     .lumens-ring {
         box-shadow: 0 0 0 1px color-mix(in srgb, var(--lumens-mist, #c8d3d7) 70%, white);
     }
+
+    .catalog-filter-scroll {
+        overscroll-behavior: contain;
+        scrollbar-color: color-mix(in srgb, var(--lumens-primary, #203749) 42%, transparent) transparent;
+        scrollbar-gutter: stable;
+        scrollbar-width: thin;
+    }
+
+    .catalog-filter-scroll::-webkit-scrollbar {
+        width: .5rem;
+    }
+
+    .catalog-filter-scroll::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .catalog-filter-scroll::-webkit-scrollbar-thumb {
+        border: 2px solid transparent;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--lumens-primary, #203749) 42%, transparent);
+        background-clip: padding-box;
+    }
+
+    .catalog-filter-scroll::-webkit-scrollbar-thumb:hover {
+        background: color-mix(in srgb, var(--lumens-accent, #ffae00) 78%, var(--lumens-primary, #203749));
+        background-clip: padding-box;
+    }
+
+    .how-buy-step {
+        position: relative;
+        overflow: hidden;
+        transition: transform .4s ease, border-color .4s ease, box-shadow .4s ease;
+    }
+
+    .how-buy-step::after {
+        content: '';
+        position: absolute;
+        inset: auto -2.5rem -2.5rem auto;
+        width: 6rem;
+        height: 6rem;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--lumens-accent, #ffae00) 14%, transparent);
+        transform: scale(.65);
+        opacity: 0;
+        transition: transform .4s ease, opacity .4s ease;
+    }
+
+    .how-buy-step-number {
+        transition: transform .4s ease, background-color .4s ease, color .4s ease;
+    }
+
+    .how-buy-step.is-active {
+        border-color: var(--lumens-accent, #ffae00);
+        box-shadow: 0 18px 40px color-mix(in srgb, var(--lumens-primary, #203749) 16%, transparent);
+        transform: translateY(-.5rem);
+    }
+
+    .how-buy-step.is-active::after {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .how-buy-step.is-active .how-buy-step-number {
+        color: var(--lumens-primary, #203749);
+        background: var(--lumens-accent, #ffae00);
+        transform: scale(1.08) rotate(-3deg);
+        animation: how-buy-pulse 1.6s ease-in-out infinite;
+    }
+
+    .how-buy-progress {
+        width: 25%;
+        transition: width .65s cubic-bezier(.4, 0, .2, 1);
+    }
+}
+
+@keyframes how-buy-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--lumens-accent, #ffae00) 35%, transparent); }
+    50% { box-shadow: 0 0 0 .55rem transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .how-buy-step,
+    .how-buy-step::after,
+    .how-buy-step-number,
+    .how-buy-progress {
+        animation: none !important;
+        transition: none !important;
+    }
 }

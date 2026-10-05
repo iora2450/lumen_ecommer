@@ -1,11 +1,20 @@
 @extends('layouts.app')
 @section('title', 'Carrito | Lumens')
-@section('description', 'Revisa tus productos y continúa como compra o cotización.')
+@section('description', 'Revisa los productos de tu carrito y completa tu compra.')
 
 @section('content')
 @php
-    $selectedType = old('request_type', 'quote');
-    $selectedDelivery = old('delivery_method', 'delivery');
+    $selectedActivityCode = old('fiscal_activity_code');
+    $selectedActivityData = collect($economicActivities)->firstWhere('codigo', $selectedActivityCode);
+    $selectedActivityDescription = $selectedActivityData['actividad_economica'] ?? null;
+    $selectedActivity = $selectedActivityCode && $selectedActivityDescription
+        ? $selectedActivityCode.' — '.$selectedActivityDescription
+        : '';
+    $selectedDepartmentCode = old('fiscal_department_code');
+    $selectedMunicipalityCode = old('fiscal_municipality_code');
+    $selectedDistrictCode = old('fiscal_district_code');
+    $availableMunicipalities = collect($municipalities)->where('departamento', $selectedDepartmentCode);
+    $availableDistricts = collect($districts)->where('departamento', $selectedDepartmentCode);
 @endphp
 <div class="mx-auto max-w-7xl px-4 py-8 sm:py-10">
     <nav class="mb-6 text-sm text-brand/60" aria-label="Migas de pan">
@@ -46,7 +55,7 @@
                 <div>
                     <p class="text-xs font-bold uppercase tracking-[0.18em] text-accent">Tu selección</p>
                     <h1 class="mt-1 text-2xl font-extrabold text-brand">Carrito de productos</h1>
-                    <p class="mt-1 text-sm text-brand/65">Ajusta las cantidades; se usarán al cotizar o confirmar la compra.</p>
+                    <p class="mt-1 text-sm text-brand/65">Ajusta las cantidades antes de confirmar la compra.</p>
                 </div>
                 <a href="{{ route('catalog.index') }}" class="text-sm font-bold text-brand hover:text-accent">+ Agregar más productos</a>
             </div>
@@ -76,7 +85,7 @@
                                         @if ($item['available_qty'] > 0)
                                             <span class="font-semibold text-emerald-700">{{ $item['available_qty'] }} disponibles</span>
                                         @else
-                                            <span class="font-semibold text-amber-700">Disponibilidad por confirmar</span>
+                                            <span class="rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1 font-black uppercase tracking-wide text-rose-800">Sin existencias · Solicitar compra por importación</span>
                                         @endif
                                     </div>
 
@@ -127,7 +136,7 @@
             <div class="flex items-center justify-between gap-4">
                 <div>
                     <p class="text-xs font-bold uppercase tracking-[0.18em] text-accent">Paso 2</p>
-                    <h2 class="mt-1 text-xl font-extrabold text-brand" id="checkout-title">Solicitar cotización</h2>
+                    <h2 class="mt-1 text-xl font-extrabold text-brand">Finalizar compra</h2>
                 </div>
                 <div class="text-right">
                     <p class="text-xs text-brand/60">Total estimado</p>
@@ -141,31 +150,9 @@
                     <input type="hidden" name="items[{{ $item['key'] }}][qty]" value="{{ $item['qty'] }}" data-checkout-qty="{{ $item['key'] }}">
                 @endforeach
 
-                <fieldset>
-                    <legend class="mb-2 text-sm font-bold text-brand">¿Qué deseas hacer?</legend>
-                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                        <label class="cursor-pointer rounded-2xl border border-mist p-4 transition has-[:checked]:border-accent has-[:checked]:bg-accent/10 has-[:checked]:ring-2 has-[:checked]:ring-accent/20">
-                            <span class="flex items-start gap-3">
-                                <input type="radio" name="request_type" value="quote" class="mt-1 accent-accent" @checked($selectedType === 'quote')>
-                                <span>
-                                    <span class="block text-sm font-bold text-brand">Cotización</span>
-                                    <span class="mt-1 block text-xs leading-relaxed text-brand/60">Recibe precio y condiciones formales.</span>
-                                </span>
-                            </span>
-                        </label>
-                        <label class="cursor-pointer rounded-2xl border border-mist p-4 transition has-[:checked]:border-accent has-[:checked]:bg-accent/10 has-[:checked]:ring-2 has-[:checked]:ring-accent/20">
-                            <span class="flex items-start gap-3">
-                                <input type="radio" name="request_type" value="purchase" class="mt-1 accent-accent" @checked($selectedType === 'purchase')>
-                                <span>
-                                    <span class="block text-sm font-bold text-brand">Comprar</span>
-                                    <span class="mt-1 block text-xs leading-relaxed text-brand/60">Confirma tu intención de compra.</span>
-                                </span>
-                            </span>
-                        </label>
-                    </div>
-                </fieldset>
-
-                <div class="rounded-2xl border border-accent/40 bg-accent/10 p-4 text-sm leading-relaxed text-brand" id="checkout-explanation" aria-live="polite"></div>
+                <div class="rounded-2xl border border-accent/40 bg-accent/10 p-4 text-sm leading-relaxed text-brand">
+                    <strong>Compra asistida:</strong> registra tu pedido y nuestro equipo confirmará existencias, entrega y pago antes de procesarlo.
+                </div>
 
                 <fieldset class="grid gap-3">
                     <legend class="mb-1 text-sm font-bold text-brand">Tus datos</legend>
@@ -179,36 +166,147 @@
                         <input type="email" name="customer_email" value="{{ old('customer_email') }}" autocomplete="email" required
                                class="rounded-xl border border-mist px-3 py-2.5 text-sm font-normal text-brand focus:border-accent focus:outline-none" placeholder="nombre@empresa.com">
                     </label>
-                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                    <div class="grid gap-4 sm:grid-cols-2">
                         <label class="grid gap-1 text-xs font-semibold text-brand/70">
-                            <span id="phone-label">Teléfono</span>
-                            <input name="customer_phone" value="{{ old('customer_phone') }}" autocomplete="tel" id="customer-phone"
+                            <span>Teléfono *</span>
+                            <input name="customer_phone" value="{{ old('customer_phone') }}" autocomplete="tel" required
                                    class="rounded-xl border border-mist px-3 py-2.5 text-sm font-normal text-brand focus:border-accent focus:outline-none" placeholder="0000-0000">
                         </label>
                         <label class="grid gap-1 text-xs font-semibold text-brand/70">
-                            Empresa <span class="font-normal">(opcional)</span>
+                            <span>Empresa <span class="font-normal">(opcional)</span></span>
                             <input name="customer_company" value="{{ old('customer_company') }}" autocomplete="organization"
                                    class="rounded-xl border border-mist px-3 py-2.5 text-sm font-normal text-brand focus:border-accent focus:outline-none" placeholder="Nombre comercial">
                         </label>
                     </div>
                 </fieldset>
 
-                <fieldset id="purchase-fields" class="space-y-3 rounded-2xl border border-mist/70 bg-mist/10 p-4">
+                <section class="rounded-2xl border border-mist/70 bg-mist/10 p-4">
+                    <label class="flex cursor-pointer items-start gap-3">
+                        <input type="checkbox" name="requires_fiscal_credit" value="1" id="fiscal-credit-toggle"
+                               class="mt-1 size-4 shrink-0 accent-accent" aria-controls="fiscal-credit-fields"
+                               @checked(old('requires_fiscal_credit'))>
+                        <span>
+                            <span class="block text-sm font-bold text-brand">Deseo crédito fiscal</span>
+                            <span class="mt-1 block text-xs leading-relaxed text-brand/60">Completa los datos del receptor para preparar el Comprobante de Crédito Fiscal electrónico (DTE).</span>
+                        </span>
+                    </label>
+
+                    <fieldset id="fiscal-credit-fields" class="mt-4 grid gap-3 border-t border-mist/70 pt-4" aria-live="polite">
+                        <legend class="sr-only">Datos para crédito fiscal y DTE</legend>
+                        <div class="rounded-xl border border-accent/40 bg-accent/10 p-3 text-xs leading-relaxed text-brand/75">
+                            Todos los campos son necesarios para preparar el DTE. Ingresa los datos tal como aparecen en tu registro de IVA.
+                        </div>
+                        <label class="grid gap-1 text-xs font-semibold text-brand/70">
+                            Nombre, denominación o razón social *
+                            <input name="fiscal_legal_name" value="{{ old('fiscal_legal_name') }}" data-fiscal-required
+                                   autocomplete="organization" class="rounded-xl border border-mist bg-white px-3 py-2.5 text-sm font-normal text-brand focus:border-accent focus:outline-none" placeholder="Razón social registrada">
+                        </label>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <label class="grid gap-1 text-xs font-semibold text-brand/70">
+                                <span>NIT *</span>
+                                <input name="fiscal_nit" value="{{ old('fiscal_nit') }}" data-fiscal-required
+                                       class="rounded-xl border border-mist bg-white px-3 py-2.5 text-sm font-normal text-brand focus:border-accent focus:outline-none" placeholder="0000-000000-000-0">
+                            </label>
+                            <label class="grid gap-1 text-xs font-semibold text-brand/70">
+                                <span>NRC *</span>
+                                <input name="fiscal_nrc" value="{{ old('fiscal_nrc') }}" data-fiscal-required
+                                       class="rounded-xl border border-mist bg-white px-3 py-2.5 text-sm font-normal text-brand focus:border-accent focus:outline-none" placeholder="000000-0">
+                            </label>
+                        </div>
+                        <label class="grid gap-1 text-xs font-semibold text-brand/70">
+                            Actividad económica / giro *
+                            <input type="search" id="fiscal-activity-search" value="{{ $selectedActivity }}"
+                                   list="economic-activity-options" data-fiscal-required autocomplete="off"
+                                   class="rounded-xl border border-mist bg-white px-3 py-2.5 text-sm font-normal text-brand focus:border-accent focus:outline-none"
+                                   placeholder="Escribe el código o una palabra de la actividad">
+                            <span class="font-normal text-brand/55">Busca y selecciona una opción del catálogo CAT-019.</span>
+                        </label>
+                        <input type="hidden" name="fiscal_activity_code" id="fiscal-activity-code" value="{{ $selectedActivityCode }}">
+                        <input type="hidden" name="fiscal_activity_description" id="fiscal-activity-description" value="{{ $selectedActivityDescription }}">
+                        <datalist id="economic-activity-options">
+                            @foreach ($economicActivities as $activity)
+                                <option value="{{ $activity['codigo'] }} — {{ $activity['actividad_economica'] }}"
+                                        data-code="{{ $activity['codigo'] }}"
+                                        data-description="{{ $activity['actividad_economica'] }}"></option>
+                            @endforeach
+                        </datalist>
+                        <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                            <label class="grid gap-1 text-xs font-semibold text-brand/70">
+                                Departamento *
+                                <select name="fiscal_department_code" id="fiscal-department" data-fiscal-required autocomplete="address-level1"
+                                        class="rounded-xl border border-mist bg-white px-3 py-2.5 text-sm font-normal text-brand focus:border-accent focus:outline-none">
+                                    <option value="">Selecciona</option>
+                                    @foreach ($departments as $department)
+                                        <option value="{{ $department['codigo'] }}" @selected($selectedDepartmentCode === $department['codigo'])>
+                                            {{ $department['nombre'] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </label>
+                            <label class="grid gap-1 text-xs font-semibold text-brand/70">
+                                Municipio *
+                                <select name="fiscal_municipality_code" id="fiscal-municipality" data-fiscal-required autocomplete="address-level2"
+                                        class="rounded-xl border border-mist bg-white px-3 py-2.5 text-sm font-normal text-brand focus:border-accent focus:outline-none">
+                                    <option value="">Selecciona</option>
+                                    @foreach ($availableMunicipalities as $municipality)
+                                        <option value="{{ $municipality['codigo'] }}" @selected($selectedMunicipalityCode === $municipality['codigo'])>
+                                            {{ $municipality['nombre'] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </label>
+                            <label class="grid gap-1 text-xs font-semibold text-brand/70">
+                                Distrito *
+                                <select name="fiscal_district_code" id="fiscal-district" data-fiscal-required
+                                        class="rounded-xl border border-mist bg-white px-3 py-2.5 text-sm font-normal text-brand focus:border-accent focus:outline-none">
+                                    <option value="">Selecciona</option>
+                                    @foreach ($availableDistricts as $district)
+                                        <option value="{{ $district['codigo'] }}" @selected($selectedDistrictCode === $district['codigo'])>
+                                            {{ $district['nombre'] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </label>
+                        </div>
+                        <p class="-mt-1 text-xs leading-relaxed text-brand/55">Los municipios y distritos se muestran según el departamento seleccionado, usando los catálogos oficiales para DTE.</p>
+                        <label class="grid gap-1 text-xs font-semibold text-brand/70">
+                            Dirección fiscal completa *
+                            <textarea name="fiscal_address" rows="2" data-fiscal-required autocomplete="street-address"
+                                      class="rounded-xl border border-mist bg-white px-3 py-2.5 text-sm font-normal text-brand focus:border-accent focus:outline-none" placeholder="Dirección registrada para el DTE">{{ old('fiscal_address') }}</textarea>
+                        </label>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <label class="grid gap-1 text-xs font-semibold text-brand/70">
+                                <span>Teléfono de facturación *</span>
+                                <input name="fiscal_phone" value="{{ old('fiscal_phone') }}" data-fiscal-required autocomplete="tel"
+                                       class="rounded-xl border border-mist bg-white px-3 py-2.5 text-sm font-normal text-brand focus:border-accent focus:outline-none" placeholder="0000-0000">
+                            </label>
+                            <label class="grid gap-1 text-xs font-semibold text-brand/70">
+                                <span>Correo para recibir el DTE *</span>
+                                <input type="email" name="fiscal_email" value="{{ old('fiscal_email') }}" data-fiscal-required autocomplete="email"
+                                       class="rounded-xl border border-mist bg-white px-3 py-2.5 text-sm font-normal text-brand focus:border-accent focus:outline-none" placeholder="facturacion@empresa.com">
+                            </label>
+                        </div>
+                    </fieldset>
+                </section>
+
+                <fieldset class="space-y-3 rounded-2xl border border-mist/70 bg-mist/10 p-4">
                     <legend class="px-1 text-sm font-bold text-brand">Entrega y pago</legend>
-                    <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                        <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-mist bg-white px-3 py-2.5 text-xs font-bold text-brand has-[:checked]:border-accent">
-                            <input type="radio" name="delivery_method" value="delivery" class="accent-accent" @checked($selectedDelivery === 'delivery')>
-                            Entrega a domicilio
-                        </label>
-                        <label class="flex cursor-pointer items-center gap-2 rounded-xl border border-mist bg-white px-3 py-2.5 text-xs font-bold text-brand has-[:checked]:border-accent">
-                            <input type="radio" name="delivery_method" value="pickup" class="accent-accent" @checked($selectedDelivery === 'pickup')>
-                            Retiro en tienda
-                        </label>
+                    <div class="flex items-center gap-3 rounded-xl border border-accent/40 bg-white px-3 py-3 text-xs font-bold text-brand">
+                        <span class="grid size-8 shrink-0 place-items-center rounded-full bg-accent/15 text-accent" aria-hidden="true">✓</span>
+                        <span>Entrega a domicilio</span>
                     </div>
-                    <label class="grid gap-1 text-xs font-semibold text-brand/70" id="shipping-address-wrap">
+                    <input type="hidden" name="delivery_method" value="delivery">
+                    <label class="grid gap-1 text-xs font-semibold text-brand/70">
                         Dirección de entrega *
-                        <textarea name="shipping_address" rows="2" autocomplete="street-address" id="shipping-address"
+                        <textarea name="shipping_address" rows="2" autocomplete="street-address" required
                                   class="rounded-xl border border-mist bg-white px-3 py-2.5 text-sm font-normal text-brand focus:border-accent focus:outline-none" placeholder="Dirección completa y referencias">{{ old('shipping_address') }}</textarea>
+                    </label>
+                    <label class="grid gap-1 text-xs font-semibold text-brand/70">
+                        Cupón de descuento <span class="font-normal">(opcional)</span>
+                        <input name="coupon_code" value="{{ old('coupon_code') }}" maxlength="50" autocomplete="off"
+                               class="rounded-xl border border-mist bg-white px-3 py-2.5 font-mono text-sm font-bold uppercase text-brand focus:border-accent focus:outline-none"
+                               placeholder="Ejemplo: VERANO20">
+                        <span class="font-normal text-brand/55">Si cumple las condiciones, el descuento aparecerá en la confirmación del pedido.</span>
                     </label>
                     <div class="flex gap-3 rounded-xl bg-white p-3 text-xs leading-relaxed text-brand/70">
                         <svg class="mt-0.5 size-5 shrink-0 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M10.3 3.6L2.7 17a2 2 0 001.7 3h15.2a2 2 0 001.7-3L13.7 3.6a2 2 0 00-3.4 0z"/></svg>
@@ -223,9 +321,41 @@
 
                 <button type="submit" @disabled(count($items) === 0) id="checkout-button"
                         class="w-full rounded-full bg-accent px-5 py-3.5 text-sm font-black text-brand shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50">
-                    Enviar cotización
+                    Confirmar compra
                 </button>
-                <p class="text-center text-xs leading-relaxed text-brand/55" id="checkout-footnote">Sin compromiso de compra. Te contactaremos para confirmar precios y disponibilidad.</p>
+                <p class="text-center text-xs leading-relaxed text-brand/55">No se realizará ningún cargo en línea. El pedido queda pendiente de confirmación por ventas.</p>
+
+                <section class="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4" aria-labelledby="purchase-help-title">
+                    <div class="flex items-start gap-3">
+                        <div class="grid size-10 shrink-0 place-items-center rounded-full bg-emerald-600 text-white" aria-hidden="true">
+                            <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12a9 9 0 01-13.2 8L3 21l1.2-4.1A9 9 0 1121 12z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 id="purchase-help-title" class="text-sm font-extrabold text-brand">¿Necesitas ayuda con tu compra?</h3>
+                            <p class="mt-1 text-xs leading-relaxed text-brand/65">Nuestro equipo está disponible para acompañarte y resolver tus dudas antes de confirmar el pedido.</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                        <a href="https://wa.me/50360331749?text=Hola%20Lumens%2C%20necesito%20ayuda%20con%20mi%20compra%20en%20l%C3%ADnea."
+                           target="_blank" rel="noopener noreferrer"
+                           class="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 py-2.5 text-center text-xs font-black text-white transition hover:bg-emerald-700"
+                           aria-label="Chatear con Lumens por WhatsApp al +503 6033 1749">
+                            Chatea con nosotros
+                        </a>
+                        <a href="mailto:marketing@lumens.com.sv?subject=Ayuda%20con%20mi%20compra%20en%20l%C3%ADnea"
+                           class="inline-flex min-h-11 items-center justify-center rounded-full border border-brand/25 bg-white px-4 py-2.5 text-center text-xs font-bold text-brand transition hover:border-brand hover:bg-brand hover:text-white">
+                            Escríbenos por correo
+                        </a>
+                    </div>
+
+                    <div class="mt-3 space-y-1 text-center text-xs text-brand/70">
+                        <p><strong>WhatsApp:</strong> <a href="https://wa.me/50360331749" target="_blank" rel="noopener noreferrer" class="font-bold underline decoration-emerald-500 underline-offset-2">+503 6033 1749</a></p>
+                        <p><strong>Correo:</strong> <a href="mailto:marketing@lumens.com.sv" class="font-bold underline decoration-accent underline-offset-2">marketing@lumens.com.sv</a></p>
+                    </div>
+                </section>
             </form>
         </aside>
     </div>
@@ -235,55 +365,75 @@
 document.addEventListener('DOMContentLoaded', () => {
     const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
     const checkoutForm = document.getElementById('checkout-form');
-    const typeInputs = document.querySelectorAll('input[name="request_type"]');
-    const purchaseFields = document.getElementById('purchase-fields');
-    const deliveryInputs = document.querySelectorAll('input[name="delivery_method"]');
-    const phoneInput = document.getElementById('customer-phone');
-    const phoneLabel = document.getElementById('phone-label');
-    const addressWrap = document.getElementById('shipping-address-wrap');
-    const addressInput = document.getElementById('shipping-address');
-    const title = document.getElementById('checkout-title');
-    const explanation = document.getElementById('checkout-explanation');
     const button = document.getElementById('checkout-button');
-    const footnote = document.getElementById('checkout-footnote');
+    const fiscalCreditToggle = document.getElementById('fiscal-credit-toggle');
+    const fiscalCreditFields = document.getElementById('fiscal-credit-fields');
+    const fiscalRequiredInputs = fiscalCreditFields?.querySelectorAll('[data-fiscal-required]') || [];
+    const activitySearch = document.getElementById('fiscal-activity-search');
+    const activityCode = document.getElementById('fiscal-activity-code');
+    const activityDescription = document.getElementById('fiscal-activity-description');
+    const activityOptions = Array.from(document.querySelectorAll('#economic-activity-options option'));
+    const fiscalDepartment = document.getElementById('fiscal-department');
+    const fiscalMunicipality = document.getElementById('fiscal-municipality');
+    const fiscalDistrict = document.getElementById('fiscal-district');
+    const municipalities = {{ Illuminate\Support\Js::from($municipalities) }};
+    const districts = {{ Illuminate\Support\Js::from($districts) }};
 
-    function selectedType() {
-        return document.querySelector('input[name="request_type"]:checked')?.value || 'quote';
+    function refreshFiscalCredit() {
+        const isEnabled = fiscalCreditToggle?.checked === true;
+        fiscalCreditFields?.classList.toggle('hidden', !isEnabled);
+        fiscalCreditToggle?.setAttribute('aria-expanded', isEnabled ? 'true' : 'false');
+        fiscalRequiredInputs.forEach((input) => {
+            input.disabled = !isEnabled;
+            input.required = isEnabled;
+        });
     }
 
-    function selectedDelivery() {
-        return document.querySelector('input[name="delivery_method"]:checked')?.value || 'delivery';
-    }
+    function syncEconomicActivity() {
+        if (!activitySearch || !activityCode || !activityDescription) return false;
 
-    function refreshDelivery() {
-        const needsAddress = selectedType() === 'purchase' && selectedDelivery() === 'delivery';
-        addressWrap?.classList.toggle('hidden', !needsAddress);
-        if (addressInput) {
-            addressInput.required = needsAddress;
-            addressInput.disabled = selectedType() !== 'purchase';
+        const value = activitySearch.value.trim();
+        const selectedOption = activityOptions.find((option) =>
+            option.value === value || option.dataset.code === value
+        );
+
+        activityCode.value = selectedOption?.dataset.code || '';
+        activityDescription.value = selectedOption?.dataset.description || '';
+
+        if (selectedOption && activitySearch.value !== selectedOption.value) {
+            activitySearch.value = selectedOption.value;
         }
+
+        activitySearch.setCustomValidity(
+            value !== '' && !selectedOption ? 'Selecciona una actividad económica válida del catálogo.' : ''
+        );
+
+        return Boolean(selectedOption);
     }
 
-    function refreshCheckoutMode() {
-        const isPurchase = selectedType() === 'purchase';
-        purchaseFields?.classList.toggle('hidden', !isPurchase);
-        deliveryInputs.forEach((input) => input.disabled = !isPurchase);
-        if (phoneInput) phoneInput.required = isPurchase;
-        if (phoneLabel) phoneLabel.textContent = isPurchase ? 'Teléfono *' : 'Teléfono (opcional)';
+    function fillGeographicSelect(select, items, selectedCode) {
+        if (!select) return;
 
-        if (isPurchase) {
-            title.textContent = 'Confirmar solicitud de compra';
-            explanation.innerHTML = '<strong>Compra asistida:</strong> registra el pedido ahora y nuestro equipo confirma existencias, entrega y pago antes de procesarlo.';
-            button.textContent = 'Confirmar solicitud de compra';
-            footnote.textContent = 'No se realizará ningún cargo en línea. El pedido queda pendiente de confirmación por ventas.';
-        } else {
-            title.textContent = 'Solicitar cotización';
-            explanation.innerHTML = '<strong>Cotización formal:</strong> envía tu lista y recibirás confirmación de precios, disponibilidad y condiciones comerciales.';
-            button.textContent = 'Enviar cotización';
-            footnote.textContent = 'Sin compromiso de compra. Te contactaremos para confirmar precios y disponibilidad.';
-        }
+        select.replaceChildren(new Option('Selecciona', ''));
+        items.forEach((item) => select.add(new Option(item.nombre, item.codigo)));
+        select.value = items.some((item) => item.codigo === selectedCode) ? selectedCode : '';
+    }
 
-        refreshDelivery();
+    function refreshGeographicSelections(preserveSelection = true) {
+        const departmentCode = fiscalDepartment?.value || '';
+        const municipalityCode = preserveSelection ? fiscalMunicipality?.value || '' : '';
+        const districtCode = preserveSelection ? fiscalDistrict?.value || '' : '';
+
+        fillGeographicSelect(
+            fiscalMunicipality,
+            municipalities.filter((item) => item.departamento === departmentCode),
+            municipalityCode,
+        );
+        fillGeographicSelect(
+            fiscalDistrict,
+            districts.filter((item) => item.departamento === departmentCode),
+            districtCode,
+        );
     }
 
     function refreshTotals() {
@@ -310,14 +460,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     document.querySelectorAll('[data-cart-qty]').forEach((input) => input.addEventListener('input', refreshTotals));
-    typeInputs.forEach((input) => input.addEventListener('change', refreshCheckoutMode));
-    deliveryInputs.forEach((input) => input.addEventListener('change', refreshDelivery));
-    checkoutForm?.addEventListener('submit', () => {
+    fiscalCreditToggle?.addEventListener('change', refreshFiscalCredit);
+    fiscalDepartment?.addEventListener('change', () => refreshGeographicSelections(false));
+    activitySearch?.addEventListener('input', syncEconomicActivity);
+    activitySearch?.addEventListener('change', syncEconomicActivity);
+    checkoutForm?.addEventListener('submit', (event) => {
+        if (fiscalCreditToggle?.checked && !syncEconomicActivity()) {
+            event.preventDefault();
+            activitySearch?.reportValidity();
+            return;
+        }
+
         button.disabled = true;
-        button.textContent = selectedType() === 'purchase' ? 'Registrando pedido…' : 'Enviando cotización…';
+        button.textContent = 'Registrando compra…';
     });
 
-    refreshCheckoutMode();
+    refreshGeographicSelections();
+    refreshFiscalCredit();
     refreshTotals();
 });
 </script>

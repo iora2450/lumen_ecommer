@@ -15,10 +15,7 @@ class ThemeAdminController extends Controller
             'primary_color' => Setting::get('primary_color', '#203749'),
             'primary_dark_color' => Setting::get('primary_dark_color', '#203749'),
             'accent_color' => Setting::get('accent_color', '#FFAE00'),
-            'footer_email' => Setting::get('footer_email', 'ventas@lumens.local'),
-            'footer_phone' => Setting::get('footer_phone', '+503 2222 3333'),
-            'footer_location' => Setting::get('footer_location', 'San Salvador, El Salvador'),
-            'home_hero_title' => Setting::get('home_hero_title', 'Iluminación que transforma tus espacios'),
+            'home_hero_title' => Setting::get('home_hero_title', 'Iluminando con calidad'),
             'home_hero_subtitle' => Setting::get('home_hero_subtitle', 'Soluciones LED certificadas para proyectos comerciales, industriales y residenciales.'),
         ];
 
@@ -32,15 +29,12 @@ class ThemeAdminController extends Controller
             'primary_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'primary_dark_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'accent_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'footer_email' => ['nullable', 'string', 'max:120'],
-            'footer_phone' => ['nullable', 'string', 'max:80'],
-            'footer_location' => ['nullable', 'string', 'max:120'],
             'home_hero_title' => ['required', 'string', 'max:120'],
             'home_hero_subtitle' => ['required', 'string', 'max:220'],
         ]);
 
         foreach ($data as $key => $value) {
-            Setting::set($key, $value, in_array($key, ['site_name', 'footer_email', 'footer_phone', 'footer_location'], true) ? 'general' : 'theme');
+            Setting::set($key, $value, $key === 'site_name' ? 'general' : 'theme');
         }
 
         return redirect()

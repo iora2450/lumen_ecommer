@@ -4,14 +4,14 @@
 
 @section('content')
 {{-- Stats --}}
-<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     <div class="rounded-xl border border-slate-200 bg-white p-5">
         <p class="text-xs text-slate-500 uppercase tracking-wide">Productos activos</p>
         <p class="mt-2 text-3xl font-bold text-[#203749]">{{ $stats['active_products'] }}</p>
         <p class="text-xs text-slate-500 mt-1">de {{ $stats['total_products'] }} totales</p>
     </div>
     <div class="rounded-xl border border-slate-200 bg-white p-5">
-        <p class="text-xs text-slate-500 uppercase tracking-wide">Cotizaciones</p>
+        <p class="text-xs text-slate-500 uppercase tracking-wide">Pedidos</p>
         <p class="mt-2 text-3xl font-bold text-[#203749]">{{ $stats['total_quotes'] }}</p>
         <p class="text-xs text-amber-600 mt-1">{{ $stats['pending_quotes'] }} pendientes</p>
     </div>
@@ -20,14 +20,9 @@
         <p class="mt-2 text-3xl font-bold text-amber-600">{{ $stats['low_stock_products'] }}</p>
         <p class="text-xs text-rose-600 mt-1">{{ $stats['out_of_stock'] }} sin stock</p>
     </div>
-    <div class="rounded-xl border border-slate-200 bg-white p-5">
-        <p class="text-xs text-slate-500 uppercase tracking-wide">Valor inventario</p>
-        <p class="mt-2 text-3xl font-bold text-emerald-600">${{ number_format((float) $stats['total_value'], 2) }}</p>
-        <p class="text-xs text-slate-500 mt-1">precio × stock</p>
-    </div>
 </div>
 
-<div class="mt-6 grid gap-4 md:grid-cols-3">
+<div class="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
     <a href="{{ route('admin.products.index', ['status' => 'promotion']) }}" class="rounded-xl border border-slate-200 bg-white p-5 transition hover:border-[#FFAE00] hover:shadow-sm">
         <p class="text-xs uppercase tracking-wide text-slate-500">Productos en oferta</p>
         <p class="mt-2 text-2xl font-bold text-[#203749]">{{ $stats['promotion_products'] }}</p>
@@ -36,16 +31,21 @@
         <p class="text-xs uppercase tracking-wide text-slate-500">Categorías en oferta</p>
         <p class="mt-2 text-2xl font-bold text-[#203749]">{{ $stats['promotion_categories'] }}</p>
     </a>
+    <a href="{{ route('admin.home-slides.index') }}" class="rounded-xl border border-slate-200 bg-white p-5 transition hover:border-[#FFAE00] hover:shadow-sm">
+        <p class="text-xs uppercase tracking-wide text-slate-500">Portada</p>
+        <p class="mt-2 text-sm font-semibold text-[#203749]">Banners promocionales</p>
+        <p class="mt-1 text-xs text-slate-500">Imágenes, mensajes y enlaces</p>
+    </a>
     <a href="{{ route('admin.theme.edit') }}" class="rounded-xl border border-slate-200 bg-white p-5 transition hover:border-[#FFAE00] hover:shadow-sm">
         <p class="text-xs uppercase tracking-wide text-slate-500">Tema visual</p>
-        <p class="mt-2 text-sm font-semibold text-[#203749]">Colores, home y contacto</p>
+        <p class="mt-2 text-sm font-semibold text-[#203749]">Colores, portada y contacto</p>
     </a>
 </div>
 
 <div class="mt-8 grid gap-6 lg:grid-cols-2">
-    {{-- Cotizaciones recientes --}}
+    {{-- Pedidos recientes --}}
     <div class="rounded-xl border border-slate-200 bg-white p-6">
-        <h3 class="font-semibold text-[#203749] mb-4">Cotizaciones recientes</h3>
+        <h3 class="font-semibold text-[#203749] mb-4">Pedidos recientes</h3>
         @if ($recentQuotes->count() > 0)
             <div class="space-y-3">
                 @foreach ($recentQuotes as $q)
@@ -56,7 +56,7 @@
                             <p class="text-xs text-slate-500">{{ $q->customer_email }}</p>
                         </div>
                         <div class="text-right">
-                            <p class="font-bold text-[#203749]">${{ number_format((float) $q->subtotal, 2) }}</p>
+                            <p class="font-bold text-[#203749]">${{ number_format((float) $q->total, 2) }}</p>
                             <span class="text-xs px-2 py-0.5 rounded-full {{ $q->status === 'pending' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700' }}">
                                 {{ $q->status }}
                             </span>
@@ -68,7 +68,7 @@
                 Ver todas
             </a>
         @else
-            <p class="text-sm text-slate-500">No hay cotizaciones aún.</p>
+            <p class="text-sm text-slate-500">No hay pedidos aún.</p>
         @endif
     </div>
 

@@ -11,6 +11,9 @@
         $footerEmail = App\Models\Setting::get('footer_email', 'ventas@lumens.local');
         $footerPhone = App\Models\Setting::get('footer_phone', '+503 2222 3333');
         $footerLocation = App\Models\Setting::get('footer_location', 'San Salvador, El Salvador');
+        $footerDescription = App\Models\Setting::get('footer_description', 'Iluminación comercial e industrial con tecnología de punta.');
+        $footerWeekdayHours = App\Models\Setting::get('footer_weekday_hours', 'Lun-Vie: 8:00am - 5:00pm');
+        $footerSaturdayHours = App\Models\Setting::get('footer_saturday_hours', 'Sáb: 9:00am - 1:00pm');
     @endphp
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -44,13 +47,18 @@
     {{-- Header / Nav --}}
     <header class="sticky top-0 z-50 border-b border-mist/70 bg-white/95 backdrop-blur">
         <div class="mx-auto max-w-7xl px-4 flex items-center gap-5 min-h-20">
-            <a href="{{ route('home') }}" class="shrink-0" aria-label="Ir al inicio">
+            <a href="{{ route('home') }}"
+               class="shrink-0"
+               aria-label="Ir al inicio"
+               @if (request()->routeIs('home')) onclick="event.preventDefault(); window.location.reload();" @endif>
                 <span class="text-2xl font-bold text-brand">{{ $siteName }}</span>
             </a>
 
             <nav class="hidden flex-1 items-center justify-center gap-7 text-sm font-semibold text-brand lg:flex">
                 <a class="transition hover:text-accent {{ request()->routeIs('home') ? 'text-accent' : '' }}" href="{{ route('home') }}">Inicio</a>
                 <a class="transition hover:text-accent {{ request()->routeIs('catalog.*') ? 'text-accent' : '' }}" href="{{ route('catalog.index') }}">Catálogo</a>
+                <a class="transition hover:text-accent {{ request()->routeIs('offers.*') ? 'text-accent' : '' }}" href="{{ route('offers.index') }}">Ofertas</a>
+                <a class="transition hover:text-accent" href="{{ route('home') }}#como-comprar">Cómo comprar</a>
                 <a class="transition hover:text-accent {{ request()->routeIs('cart.*') ? 'text-accent' : '' }}" href="{{ route('cart.index') }}">Carrito</a>
             </nav>
 
@@ -78,6 +86,8 @@
                     <nav class="absolute right-0 top-14 grid w-56 gap-1 rounded-2xl border border-mist bg-white p-3 text-sm font-semibold shadow-xl">
                         <a class="rounded-xl px-3 py-2 hover:bg-mist/30" href="{{ route('home') }}">Inicio</a>
                         <a class="rounded-xl px-3 py-2 hover:bg-mist/30" href="{{ route('catalog.index') }}">Catálogo</a>
+                        <a class="rounded-xl px-3 py-2 hover:bg-mist/30" href="{{ route('offers.index') }}">Ofertas</a>
+                        <a class="rounded-xl px-3 py-2 hover:bg-mist/30" href="{{ route('home') }}#como-comprar">Cómo comprar</a>
                         <a class="rounded-xl px-3 py-2 hover:bg-mist/30" href="{{ route('cart.index') }}">Carrito ({{ $cartCount }})</a>
                     </nav>
                 </details>
@@ -111,29 +121,31 @@
         <div class="mx-auto max-w-7xl px-4 py-10 grid gap-8 md:grid-cols-4">
             <div>
                 <span class="text-xl font-bold">{{ $siteName }}</span>
-                <p class="mt-3 text-sm text-mist">Iluminación comercial e industrial con tecnología de punta.</p>
+                <p class="mt-3 text-sm text-mist">{{ $footerDescription }}</p>
             </div>
             <div>
                 <h4 class="font-semibold mb-3">Empresa</h4>
                 <ul class="space-y-2 text-sm text-mist">
                     <li><a href="{{ route('home') }}">Inicio</a></li>
                     <li><a href="{{ route('catalog.index') }}">Catálogo</a></li>
+                    <li><a href="{{ route('offers.index') }}">Ofertas</a></li>
+                    <li><a href="{{ route('home') }}#como-comprar">Cómo comprar</a></li>
                     <li><a href="{{ route('cart.index') }}">Carrito</a></li>
                 </ul>
             </div>
             <div>
                 <h4 class="font-semibold mb-3">Contacto</h4>
                 <ul class="space-y-2 text-sm text-mist">
-                    <li>{{ $footerEmail }}</li>
-                    <li>{{ $footerPhone }}</li>
-                    <li>{{ $footerLocation }}</li>
+                    @if ($footerEmail)<li>{{ $footerEmail }}</li>@endif
+                    @if ($footerPhone)<li>{{ $footerPhone }}</li>@endif
+                    @if ($footerLocation)<li>{{ $footerLocation }}</li>@endif
                 </ul>
             </div>
             <div>
                 <h4 class="font-semibold mb-3">Horarios</h4>
                 <ul class="space-y-2 text-sm text-mist">
-                    <li>Lun-Vie: 8:00am - 5:00pm</li>
-                    <li>Sáb: 9:00am - 1:00pm</li>
+                    @if ($footerWeekdayHours)<li>{{ $footerWeekdayHours }}</li>@endif
+                    @if ($footerSaturdayHours)<li>{{ $footerSaturdayHours }}</li>@endif
                 </ul>
             </div>
         </div>

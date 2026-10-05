@@ -1,6 +1,6 @@
 @extends('layouts.admin')
-@section('title', 'Carrusel inicio')
-@section('subtitle', 'Banners de promociones, productos nuevos o campañas visibles en la página principal.')
+@section('title', 'Banners de novedades')
+@section('subtitle', 'Administra el carrusel de promociones, productos nuevos y campañas de la sección Novedades.')
 
 @section('content')
 <div class="mb-6 flex justify-end">
@@ -33,6 +33,9 @@
                             <p class="text-xs font-bold uppercase tracking-wide text-[#FFAE00]">{{ $slide->badge }}</p>
                         @endif
                         <p class="font-semibold text-[#203749]">{{ $slide->title }}</p>
+                        @if ($slide->category)
+                            <p class="mt-1 text-xs font-semibold text-slate-600">Categoría: {{ $slide->category->name }}</p>
+                        @endif
                         @if ($slide->subtitle)
                             <p class="mt-1 max-w-xl text-xs text-slate-500">{{ $slide->subtitle }}</p>
                         @endif

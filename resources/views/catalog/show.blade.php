@@ -6,6 +6,7 @@
 @php
     $imageUrl = $product->display_image_url;
     $description = $product->display_description;
+    $isOutOfStock = ($product->qty ?? 0) <= 0;
 @endphp
 <div class="mx-auto max-w-7xl px-4 py-8">
     {{-- Breadcrumb --}}
@@ -53,10 +54,10 @@
                 @if ($product->is_featured)
                     <span class="rounded-full bg-accent text-brand text-xs font-bold px-3 py-1">DESTACADO</span>
                 @endif
-                @if ($product->qty > 0)
+                @if (! $isOutOfStock)
                     <span class="rounded-full bg-mist text-brand text-xs font-bold px-3 py-1">EN STOCK ({{ $product->qty }})</span>
                 @else
-                    <span class="rounded-full bg-black text-white text-xs font-bold px-3 py-1">SIN STOCK</span>
+                    <span class="rounded-full bg-rose-700 px-3 py-1 text-xs font-black text-white">SIN EXISTENCIAS</span>
                 @endif
                 @if (!empty($product->certifications))
                     @foreach ($product->certifications as $cert)
@@ -65,13 +66,27 @@
                 @endif
             </div>
 
+            @if ($isOutOfStock)
+                <div class="mt-5 rounded-2xl border-2 border-rose-600 bg-rose-50 p-5 text-rose-950 shadow-sm" role="alert">
+                    <div class="flex items-start gap-3">
+                        <svg class="mt-0.5 size-6 shrink-0 text-rose-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+                        </svg>
+                        <div>
+                            <p class="text-lg font-black uppercase tracking-wide">Producto sin existencias</p>
+                            <p class="mt-1 font-semibold leading-relaxed">Solicita una compra por importación y nuestro equipo te contactará para confirmar precio y tiempo de entrega.</p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             {{-- Precio --}}
             <div class="mt-6 flex items-baseline gap-3">
                 <span class="text-4xl font-extrabold text-brand">${{ number_format((float) $product->effective_price, 2) }}</span>
                 @if ($product->isOnSale)
                     <span class="text-xl text-brand/45 line-through">${{ number_format((float) $product->price, 2) }}</span>
                     <span class="rounded-full bg-accent/20 text-brand text-xs font-bold px-2 py-1">
-                        -{{ round((1 - $product->promotion_price / $product->price) * 100) }}%
+                        -{{ $product->discount_percentage }}%
                     </span>
                 @endif
             </div>
@@ -94,7 +109,11 @@
                                 </div>
                                 <div class="text-right">
                                     <p class="text-sm font-bold text-brand">${{ number_format((float) $variant->price, 2) }}</p>
-                                    <p class="text-xs text-brand/60">{{ $variant->qty }} en stock</p>
+                                    @if ($variant->qty > 0)
+                                        <p class="text-xs font-semibold text-emerald-700">{{ $variant->qty }} en existencia</p>
+                                    @else
+                                        <p class="text-xs font-bold text-rose-700">Sin existencias · Solicitar importación</p>
+                                    @endif
                                 </div>
                             </div>
                         @endforeach
@@ -112,7 +131,7 @@
                             <select name="variant_id" class="rounded-lg border border-mist px-3 py-2 font-normal focus:border-accent focus:outline-none">
                                 <option value="">Producto base</option>
                                 @foreach ($product->variants as $variant)
-                                    <option value="{{ $variant->id }}">{{ $variant->name }} - {{ $variant->sku }}</option>
+                                    <option value="{{ $variant->id }}">{{ $variant->name }} - {{ $variant->sku }}{{ $variant->qty <= 0 ? ' (sin existencias; disponible por importación)' : '' }}</option>
                                 @endforeach
                             </select>
                         </label>
@@ -123,8 +142,8 @@
                     </label>
                 </div>
                 <div class="mt-4 flex flex-wrap gap-3">
-                    <button type="submit" class="inline-flex h-12 items-center rounded-full bg-accent px-6 text-sm font-bold text-brand shadow-sm transition hover:-translate-y-0.5">
-                        Agregar al carrito
+                    <button type="submit" class="inline-flex h-12 items-center rounded-full px-6 text-sm font-bold shadow-sm transition hover:-translate-y-0.5 {{ $isOutOfStock ? 'bg-rose-700 text-white hover:bg-rose-800' : 'bg-accent text-brand' }}">
+                        {{ $isOutOfStock ? 'Solicitar compra por importación' : 'Agregar al carrito' }}
                     </button>
                     <a href="{{ route('cart.index') }}"
                        class="inline-flex h-12 items-center rounded-full bg-brand px-6 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-black">

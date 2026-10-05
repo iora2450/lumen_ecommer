@@ -24,6 +24,7 @@ class DemoDataSeeder extends Seeder
             ['key' => 'primary_color',       'value' => '#203749',              'group' => 'theme'],
             ['key' => 'primary_dark_color',  'value' => '#203749',              'group' => 'theme'],
             ['key' => 'accent_color',        'value' => '#FFAE00',              'group' => 'theme'],
+            ['key' => 'home_hero_title',     'value' => 'Iluminando con calidad', 'group' => 'theme'],
             ['key' => 'quote_min_days',      'value' => '3',                      'group' => 'quotes'],
             ['key' => 'sync_api_key',        'value' => Str::random(40),          'group' => 'sync'],
             ['key' => 'sync_last_run',       'value' => now()->toIso8601String(), 'group' => 'sync'],

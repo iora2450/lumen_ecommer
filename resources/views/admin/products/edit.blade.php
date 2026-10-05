@@ -83,17 +83,23 @@
                 </label>
                 <label class="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
                     <span>En oferta</span>
-                    <input type="checkbox" name="is_promotion" value="1" @checked(old('is_promotion', $product->is_promotion)) class="size-4 accent-[#FFAE00]">
+                    <input id="is-promotion" type="checkbox" name="is_promotion" value="1" @checked(old('is_promotion', $product->is_promotion)) class="size-4 accent-[#FFAE00]">
                 </label>
             </div>
         </section>
 
         <section class="rounded-xl border border-slate-200 bg-white p-5">
-            <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-slate-500">Oferta</h2>
-            <div class="grid gap-4">
+            <div class="mb-4 flex items-center justify-between gap-3">
+                <h2 class="text-sm font-bold uppercase tracking-wide text-slate-500">Oferta</h2>
+                @if ($product->is_promotion)
+                    <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{{ $product->promotion_status_label }}</span>
+                @endif
+            </div>
+            <p class="mb-4 text-xs leading-relaxed text-slate-500">El precio promocional debe ser menor al precio base. Las fechas son opcionales; sin fechas, la oferta empieza al guardar y no vence.</p>
+            <fieldset id="promotion-fields" class="grid gap-4 disabled:opacity-45" @disabled(! (bool) old('is_promotion', $product->is_promotion))>
                 <label class="grid gap-1 text-sm font-semibold text-slate-700">
-                    Precio de oferta
-                    <input type="number" step="0.01" min="0" name="promotion_price" value="{{ old('promotion_price', $product->promotion_price) }}"
+                    Precio de oferta *
+                    <input id="promotion-price" type="number" step="0.01" min="0.01" name="promotion_price" value="{{ old('promotion_price', $product->promotion_price) }}"
                            class="rounded-lg border border-slate-300 px-3 py-2 font-normal focus:border-[#FFAE00] focus:outline-none">
                 </label>
                 <label class="grid gap-1 text-sm font-semibold text-slate-700">
@@ -106,7 +112,8 @@
                     <input type="datetime-local" name="promotion_ends_at" value="{{ old('promotion_ends_at', optional($product->promotion_ends_at)->format('Y-m-d\TH:i')) }}"
                            class="rounded-lg border border-slate-300 px-3 py-2 font-normal focus:border-[#FFAE00] focus:outline-none">
                 </label>
-            </div>
+                <p id="promotion-preview" class="hidden rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800"></p>
+            </fieldset>
         </section>
 
         <div class="flex gap-3">
@@ -115,4 +122,32 @@
         </div>
     </aside>
 </form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggle = document.getElementById('is-promotion');
+        const fields = document.getElementById('promotion-fields');
+        const basePrice = document.querySelector('[name="price"]');
+        const promotionPrice = document.getElementById('promotion-price');
+        const preview = document.getElementById('promotion-preview');
+
+        const updateOffer = () => {
+            fields.disabled = !toggle.checked;
+            const base = Number(basePrice.value);
+            const offer = Number(promotionPrice.value);
+            const valid = toggle.checked && base > 0 && offer > 0 && offer < base;
+
+            preview.classList.toggle('hidden', !valid);
+            if (valid) {
+                const percentage = Math.round((1 - offer / base) * 100);
+                preview.textContent = `El cliente verá $${offer.toFixed(2)} y un ahorro de ${percentage}%.`;
+            }
+        };
+
+        toggle.addEventListener('change', updateOffer);
+        basePrice.addEventListener('input', updateOffer);
+        promotionPrice.addEventListener('input', updateOffer);
+        updateOffer();
+    });
+</script>
 @endsection

@@ -26,8 +26,8 @@
         </button>
 
         {{-- Sidebar de filtros --}}
-        <aside id="filters-sidebar" class="hidden space-y-6 lg:block bg-white p-5 rounded-2xl border border-mist/70 shadow-sm">
-            <form method="GET" action="{{ route('catalog.index') }}" id="filters-form">
+        <aside id="filters-sidebar" class="hidden max-h-[calc(100dvh-7rem)] overflow-hidden rounded-2xl border border-mist/70 bg-white p-5 shadow-sm lg:sticky lg:top-28 lg:block lg:self-start">
+            <form method="GET" action="{{ route('catalog.index') }}" id="filters-form" class="flex max-h-[calc(100dvh-9.5rem)] flex-col">
                 {{-- Búsqueda --}}
                 <div>
                     <label class="text-sm font-semibold text-brand">Buscar productos</label>
@@ -41,12 +41,15 @@
                     </div>
                 </div>
 
+                {{-- Menú desplazable de categorías, marcas y opciones --}}
+                <div id="filters-scroll-region" class="catalog-filter-scroll mt-6 min-h-0 flex-1 overflow-y-auto pr-2">
                 {{-- Categorías --}}
-                <div class="mt-6">
+                <div>
                     <h3 class="text-sm font-bold text-brand uppercase tracking-wider mb-3">Categorías</h3>
                     <ul class="space-y-1">
                         <li>
                             <a href="{{ route('catalog.index', array_merge(request()->except('category'), ['category' => null])) }}"
+                               @if (!request('category')) aria-current="true" @endif
                                class="flex justify-between items-center rounded-lg px-3 py-2 text-sm transition {{ !request('category') ? 'bg-accent/15 font-bold text-brand border-l-2 border-accent' : 'text-brand/70 hover:bg-mist/25 hover:text-brand' }}">
                                 <span>Todas</span>
                                 <span class="bg-mist/45 text-brand text-xs px-2 py-0.5 rounded-full">{{ $categories->sum('products_count') }}</span>
@@ -55,6 +58,7 @@
                         @foreach ($categories as $cat)
                             <li>
                                 <a href="{{ route('catalog.index', array_merge(request()->except('category'), ['category' => $cat->slug])) }}"
+                                   @if (request('category') === $cat->slug) aria-current="true" @endif
                                    class="flex justify-between items-center rounded-lg px-3 py-2 text-sm transition {{ request('category') === $cat->slug ? 'bg-accent/15 font-bold text-brand border-l-2 border-accent' : 'text-brand/70 hover:bg-mist/25 hover:text-brand' }}">
                                     <span>{{ $cat->name }}</span>
                                     <span class="{{ request('category') === $cat->slug ? 'bg-white text-brand' : 'bg-mist/45 text-brand' }} text-xs px-2 py-0.5 rounded-full shadow-sm">{{ $cat->products_count }}</span>
@@ -113,8 +117,9 @@
                         <span class="group-hover:text-brand transition">Solo con stock</span>
                     </label>
                 </div>
+                </div>
 
-                <button type="submit" class="mt-6 w-full rounded-xl bg-brand text-white py-3 text-sm font-bold shadow-md transition hover:bg-black hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2">
+                <button type="submit" class="mt-5 w-full shrink-0 rounded-xl bg-brand text-white py-3 text-sm font-bold shadow-md transition hover:bg-black hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2">
                     Aplicar filtros
                 </button>
             </form>
@@ -162,6 +167,7 @@
         const toggleBtn = document.getElementById('toggle-filters');
         const sidebar = document.getElementById('filters-sidebar');
         const toggleIcon = document.getElementById('toggle-icon');
+        const scrollRegion = document.getElementById('filters-scroll-region');
 
         if (toggleBtn && sidebar) {
             toggleBtn.addEventListener('click', function() {
@@ -172,6 +178,40 @@
                     toggleIcon.classList.add('rotate-180');
                 }
             });
+        }
+
+        if (scrollRegion) {
+            const storageKey = 'catalog-filter-scroll-position';
+            let savedPosition = null;
+
+            try {
+                savedPosition = window.sessionStorage.getItem(storageKey);
+            } catch (error) {
+                // El catálogo sigue funcionando aunque el navegador bloquee sessionStorage.
+            }
+
+            window.requestAnimationFrame(function() {
+                if (savedPosition !== null) {
+                    scrollRegion.scrollTop = Number(savedPosition) || 0;
+                    return;
+                }
+
+                const activeOption = scrollRegion.querySelector('[aria-current="true"]');
+
+                if (activeOption) {
+                    const optionTop = activeOption.getBoundingClientRect().top;
+                    const regionTop = scrollRegion.getBoundingClientRect().top;
+                    scrollRegion.scrollTop += optionTop - regionTop - (scrollRegion.clientHeight / 2);
+                }
+            });
+
+            scrollRegion.addEventListener('scroll', function() {
+                try {
+                    window.sessionStorage.setItem(storageKey, String(scrollRegion.scrollTop));
+                } catch (error) {
+                    // No se requiere persistencia para usar los filtros.
+                }
+            }, { passive: true });
         }
     });
 </script>

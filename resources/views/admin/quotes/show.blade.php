@@ -20,9 +20,14 @@
                 </div>
             @endforeach
         </div>
-        <div class="mt-4 pt-4 border-t border-slate-200 flex justify-between text-lg font-bold">
-            <span>Total</span>
-            <span>${{ number_format((float) $quote->subtotal, 2) }}</span>
+        <div class="mt-4 space-y-2 border-t border-slate-200 pt-4">
+            <div class="flex justify-between text-sm"><span>Subtotal</span><span>${{ number_format((float) $quote->subtotal, 2) }}</span></div>
+            @if ((float) $quote->discount_amount > 0)
+                <div class="flex justify-between text-sm font-semibold text-emerald-700">
+                    <span>Cupón {{ $quote->coupon_code }}</span><span>−${{ number_format((float) $quote->discount_amount, 2) }}</span>
+                </div>
+            @endif
+            <div class="flex justify-between text-lg font-bold"><span>Total</span><span>${{ number_format((float) $quote->total, 2) }}</span></div>
         </div>
 
         @if ($quote->notes)
@@ -47,6 +52,25 @@
                 @if ($quote->payment_status_label)<div><dt class="text-xs text-slate-500">Pago</dt><dd>{{ $quote->payment_status_label }}</dd></div>@endif
             </dl>
         </div>
+
+        @if ($quote->requires_fiscal_credit)
+            <div class="rounded-xl border-2 border-amber-300 bg-amber-50 p-6">
+                <h3 class="font-semibold text-[#203749] mb-1">Crédito fiscal solicitado</h3>
+                <p class="mb-4 text-xs text-slate-600">Datos del receptor para preparar el DTE.</p>
+                <dl class="space-y-2 text-sm">
+                    <div><dt class="text-xs text-slate-500">Razón social</dt><dd class="font-semibold">{{ $quote->fiscal_legal_name }}</dd></div>
+                    <div><dt class="text-xs text-slate-500">NIT</dt><dd>{{ $quote->fiscal_nit }}</dd></div>
+                    <div><dt class="text-xs text-slate-500">NRC</dt><dd>{{ $quote->fiscal_nrc }}</dd></div>
+                    <div><dt class="text-xs text-slate-500">Actividad económica</dt><dd>{{ $quote->fiscal_activity_code }} — {{ $quote->fiscal_activity_description }}</dd></div>
+                    <div><dt class="text-xs text-slate-500">Departamento</dt><dd>{{ $quote->fiscal_department }} ({{ $quote->fiscal_department_code }})</dd></div>
+                    <div><dt class="text-xs text-slate-500">Municipio</dt><dd>{{ $quote->fiscal_municipality }} ({{ $quote->fiscal_municipality_code }})</dd></div>
+                    <div><dt class="text-xs text-slate-500">Distrito</dt><dd>{{ $quote->fiscal_district }} ({{ $quote->fiscal_district_code }})</dd></div>
+                    <div><dt class="text-xs text-slate-500">Dirección fiscal</dt><dd>{{ $quote->fiscal_address }}</dd></div>
+                    <div><dt class="text-xs text-slate-500">Teléfono DTE</dt><dd>{{ $quote->fiscal_phone }}</dd></div>
+                    <div><dt class="text-xs text-slate-500">Correo DTE</dt><dd>{{ $quote->fiscal_email }}</dd></div>
+                </dl>
+            </div>
+        @endif
 
         <div class="rounded-xl border border-slate-200 bg-white p-6">
             <h3 class="font-semibold text-[#203749] mb-4">Estado</h3>

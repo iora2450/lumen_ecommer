@@ -1,6 +1,6 @@
 @extends('layouts.admin')
-@section('title', 'Tema y Contacto')
-@section('subtitle', 'Ajustes rápidos de identidad visual y datos visibles en la web.')
+@section('title', 'Tema y Portada')
+@section('subtitle', 'Ajustes rápidos de identidad visual y contenido principal de la web.')
 
 @section('content')
 <form method="POST" action="{{ route('admin.theme.update') }}" class="grid gap-6 lg:grid-cols-[1fr_360px]">
@@ -31,11 +31,12 @@
         </section>
 
         <section class="rounded-xl border border-slate-200 bg-white p-5">
-            <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-slate-500">Inicio</h2>
+            <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-slate-500">Portada principal</h2>
             <div class="grid gap-4">
                 <label class="grid gap-1 text-sm font-semibold text-slate-700">
                     Título principal
                     <input name="home_hero_title" value="{{ old('home_hero_title', $settings['home_hero_title']) }}" class="rounded-lg border border-slate-300 px-3 py-2 font-normal focus:border-[#FFAE00] focus:outline-none">
+                    <span class="text-xs font-normal text-slate-500">Este es el mensaje grande que aparece al abrir la página.</span>
                 </label>
                 <label class="grid gap-1 text-sm font-semibold text-slate-700">
                     Texto principal
@@ -44,23 +45,6 @@
             </div>
         </section>
 
-        <section class="rounded-xl border border-slate-200 bg-white p-5">
-            <h2 class="mb-4 text-sm font-bold uppercase tracking-wide text-slate-500">Contacto</h2>
-            <div class="grid gap-4 md:grid-cols-3">
-                <label class="grid gap-1 text-sm font-semibold text-slate-700">
-                    Correo
-                    <input name="footer_email" value="{{ old('footer_email', $settings['footer_email']) }}" class="rounded-lg border border-slate-300 px-3 py-2 font-normal focus:border-[#FFAE00] focus:outline-none">
-                </label>
-                <label class="grid gap-1 text-sm font-semibold text-slate-700">
-                    Teléfono
-                    <input name="footer_phone" value="{{ old('footer_phone', $settings['footer_phone']) }}" class="rounded-lg border border-slate-300 px-3 py-2 font-normal focus:border-[#FFAE00] focus:outline-none">
-                </label>
-                <label class="grid gap-1 text-sm font-semibold text-slate-700">
-                    Ubicación
-                    <input name="footer_location" value="{{ old('footer_location', $settings['footer_location']) }}" class="rounded-lg border border-slate-300 px-3 py-2 font-normal focus:border-[#FFAE00] focus:outline-none">
-                </label>
-            </div>
-        </section>
     </div>
 
     <aside class="space-y-5">
@@ -71,7 +55,7 @@
                     <p class="text-xs font-bold uppercase tracking-wide" style="color: {{ old('accent_color', $settings['accent_color']) }}">Lumens</p>
                     <h3 class="mt-2 text-xl font-extrabold">{{ old('home_hero_title', $settings['home_hero_title']) }}</h3>
                     <p class="mt-2 text-sm text-white/80">{{ old('home_hero_subtitle', $settings['home_hero_subtitle']) }}</p>
-                    <span class="mt-4 inline-flex rounded-full px-4 py-2 text-sm font-bold" style="background: {{ old('accent_color', $settings['accent_color']) }}; color: {{ old('primary_color', $settings['primary_color']) }};">Cotizar</span>
+                    <span class="mt-4 inline-flex rounded-full px-4 py-2 text-sm font-bold" style="background: {{ old('accent_color', $settings['accent_color']) }}; color: {{ old('primary_color', $settings['primary_color']) }};">Agregar al carrito</span>
                 </div>
             </div>
         </section>

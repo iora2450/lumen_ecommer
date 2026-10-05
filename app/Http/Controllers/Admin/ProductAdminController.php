@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ProductAdminController extends Controller
 {
@@ -14,7 +15,7 @@ class ProductAdminController extends Controller
         $query = Product::with(['category:id,name', 'brand:id,name']);
 
         if ($request->filled('q')) {
-            $term = '%' . $request->q . '%';
+            $term = '%'.$request->q.'%';
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', $term)
                     ->orWhere('sku', 'like', $term)
@@ -58,19 +59,39 @@ class ProductAdminController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'unique:products,slug,' . $product->id],
+            'slug' => ['nullable', 'string', 'max:255', 'unique:products,slug,'.$product->id],
             'description' => ['nullable', 'string'],
             'short_description' => ['nullable', 'string', 'max:1000'],
             'image_url' => ['nullable', 'string', 'max:2048'],
             'category_id' => ['nullable', 'exists:categories,id'],
             'price' => ['required', 'numeric', 'min:0'],
-            'promotion_price' => ['nullable', 'numeric', 'min:0'],
-            'promotion_starts_at' => ['nullable', 'date'],
-            'promotion_ends_at' => ['nullable', 'date', 'after_or_equal:promotion_starts_at'],
+            'promotion_price' => [
+                Rule::excludeIf(fn () => ! $request->boolean('is_promotion')),
+                'required',
+                'numeric',
+                'gt:0',
+                'lt:price',
+            ],
+            'promotion_starts_at' => [
+                Rule::excludeIf(fn () => ! $request->boolean('is_promotion')),
+                'nullable',
+                'date',
+            ],
+            'promotion_ends_at' => [
+                Rule::excludeIf(fn () => ! $request->boolean('is_promotion')),
+                'nullable',
+                'date',
+                'after_or_equal:promotion_starts_at',
+            ],
             'technical_specs' => ['nullable', 'string', 'max:6000'],
             'is_active' => ['nullable', 'boolean'],
             'is_featured' => ['nullable', 'boolean'],
             'is_promotion' => ['nullable', 'boolean'],
+        ], [
+            'promotion_price.required' => 'Ingresa el precio de oferta.',
+            'promotion_price.gt' => 'El precio de oferta debe ser mayor que cero.',
+            'promotion_price.lt' => 'El precio de oferta debe ser menor que el precio base.',
+            'promotion_ends_at.after_or_equal' => 'La fecha final debe ser posterior o igual a la fecha inicial.',
         ]);
 
         $data['is_active'] = $request->boolean('is_active');

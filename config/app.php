@@ -61,11 +61,11 @@ return [
     |
     | Here you may specify the default timezone for your application, which
     | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | may be configured per environment when the store operates elsewhere.
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'America/El_Salvador'),
 
     /*
     |--------------------------------------------------------------------------

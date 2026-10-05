@@ -12,6 +12,14 @@ class ExampleTest extends TestCase
     public function test_the_application_returns_a_successful_response(): void
     {
         $response = $this->get('/');
-        $response->assertStatus(200);
+        $response->assertStatus(200)
+            ->assertSee('Iluminando con calidad')
+            ->assertDontSee('Iluminación que transforma tus espacios')
+            ->assertSee('Cómo comprar')
+            ->assertSee('id="como-comprar"', false)
+            ->assertSee('Explora el catálogo')
+            ->assertSee('Agrega al carrito')
+            ->assertSee('Completa tus datos')
+            ->assertSee('Recibe confirmación');
     }
 }

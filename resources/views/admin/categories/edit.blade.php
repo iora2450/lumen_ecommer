@@ -39,7 +39,11 @@
                            class="rounded-lg border border-slate-300 px-3 py-2 font-normal focus:border-[#FFAE00] focus:outline-none">
                 </label>
                 <label class="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                    <span>Visible en web</span>
+                    <span>
+                        <span class="block font-semibold">Visible en web</span>
+                        <span class="mt-0.5 block text-xs text-slate-500">Al ocultarla, tampoco aparecerán sus productos.</span>
+                    </span>
+                    <input type="hidden" name="is_active" value="0">
                     <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $category->is_active)) class="size-4 accent-[#FFAE00]">
                 </label>
                 <label class="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm">
@@ -47,7 +51,10 @@
                     <input type="checkbox" name="is_featured" value="1" @checked(old('is_featured', $category->is_featured)) class="size-4 accent-[#FFAE00]">
                 </label>
                 <label class="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                    <span>Categoría en oferta</span>
+                    <span>
+                        <span class="block font-semibold">Categoría en oferta</span>
+                        <span class="mt-0.5 block text-xs text-slate-500">Destaca la categoría; no modifica los precios de sus productos.</span>
+                    </span>
                     <input type="checkbox" name="is_promotion" value="1" @checked(old('is_promotion', $category->is_promotion)) class="size-4 accent-[#FFAE00]">
                 </label>
                 <label class="grid gap-1 text-sm font-semibold text-slate-700">

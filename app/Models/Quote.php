@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -30,12 +31,21 @@ class Quote extends Model
 
     protected $fillable = [
         'quote_number', 'request_type', 'customer_name', 'customer_email',
-        'customer_phone', 'customer_company', 'shipping_address', 'delivery_method',
-        'payment_method', 'payment_status', 'subtotal', 'notes', 'status',
+        'customer_phone', 'customer_company', 'requires_fiscal_credit',
+        'fiscal_legal_name', 'fiscal_nit', 'fiscal_nrc', 'fiscal_activity_code',
+        'fiscal_activity_description', 'fiscal_department_code', 'fiscal_department',
+        'fiscal_municipality_code', 'fiscal_municipality', 'fiscal_district_code',
+        'fiscal_district', 'fiscal_address', 'fiscal_phone', 'fiscal_email',
+        'shipping_address', 'delivery_method',
+        'payment_method', 'payment_status', 'subtotal', 'coupon_id', 'coupon_code',
+        'discount_amount', 'total', 'notes', 'status',
     ];
 
     protected $casts = [
+        'requires_fiscal_credit' => 'boolean',
         'subtotal' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'total' => 'decimal:2',
     ];
 
     protected static function booted(): void
@@ -51,6 +61,11 @@ class Quote extends Model
     public function items(): HasMany
     {
         return $this->hasMany(QuoteItem::class);
+    }
+
+    public function coupon(): BelongsTo
+    {
+        return $this->belongsTo(Coupon::class);
     }
 
     public function scopePending($query)
