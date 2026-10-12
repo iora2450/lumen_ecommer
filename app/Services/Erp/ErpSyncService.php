@@ -25,6 +25,10 @@ use Illuminate\Support\Str;
  */
 class ErpSyncService
 {
+    public function __construct(protected ProductImageMirror $productImageMirror)
+    {
+    }
+
     public function syncCategories(array $items): SyncResult
     {
         $result = new SyncResult();
@@ -130,6 +134,7 @@ class ErpSyncService
 
                 $categoryId = $this->resolveCategoryId($p['category_erp_id'] ?? $p['category_id'] ?? null);
                 $brandId    = $this->resolveBrandId($p['brand_erp_id'] ?? $p['brand_id'] ?? null);
+                $p = $this->mirrorProductImagePayload($p);
 
                 DB::transaction(function () use ($p, $erpId, $sku, $categoryId, $brandId, $result, $includeRelations) {
                     $existing = Product::when($erpId, fn ($q) => $q->where('lumen_id', $erpId))
@@ -154,7 +159,7 @@ class ErpSyncService
                             'reserved_qty'  => (int) ($p['reserved_qty'] ?? 0),
                             'backorder_qty' => (int) ($p['backorder_qty'] ?? 0),
                             'stock_status'  => $p['stock_status'] ?? $this->inferStockStatus((int) ($p['qty'] ?? 0)),
-                            'image_url'     => $existing?->image_url ?? $this->firstImage($p['image_url'] ?? $p['image'] ?? null),
+                            'image_url'     => $this->firstImage($p['image_url'] ?? $p['image'] ?? null) ?? $existing?->image_url,
                             'category_id'   => $categoryId,
                             'brand_id'      => $brandId,
                             'is_featured'   => $existing ? $existing->is_featured : (bool) ($p['is_featured'] ?? $p['featured'] ?? false),
@@ -294,7 +299,6 @@ class ErpSyncService
 
     protected function syncProductImages(Product $product, array $images, ?string $primaryUrl): void
     {
-        $product->images()->delete();
         $rows = [];
         $primaryUrl = $this->firstImage($primaryUrl);
 
@@ -323,6 +327,7 @@ class ErpSyncService
         }
 
         if ($rows) {
+            $product->images()->delete();
             $hasPrimary = collect($rows)->contains('is_primary', true);
             if (!$hasPrimary) {
                 $rows[0]['is_primary'] = true;
@@ -381,7 +386,6 @@ class ErpSyncService
 
     protected function syncVariantImages(ProductVariant $variant, array $images, ?string $primaryUrl): void
     {
-        $variant->images()->delete();
         $rows = [];
         $primaryUrl = $this->firstImage($primaryUrl);
 
@@ -410,8 +414,72 @@ class ErpSyncService
         }
 
         if ($rows) {
+            $variant->images()->delete();
             ProductVariantImage::insert($rows);
         }
+    }
+
+    protected function mirrorProductImagePayload(array $product): array
+    {
+        if (! config('erp.product_images.enabled', true)) {
+            return $product;
+        }
+
+        $primarySource = $product['image_url'] ?? $product['image'] ?? null;
+        if ($this->firstImage($primarySource) !== null) {
+            $product['image_url'] = $this->productImageMirror->mirror($primarySource);
+            unset($product['image']);
+        }
+
+        if (array_key_exists('images', $product)) {
+            $product['images'] = $this->mirrorImageList((array) $product['images']);
+        }
+
+        if (! empty($product['variants'])) {
+            $product['variants'] = array_map(function (array $variant): array {
+                $primarySource = $variant['image_url'] ?? $variant['image'] ?? null;
+                if ($this->firstImage($primarySource) !== null) {
+                    $variant['image_url'] = $this->productImageMirror->mirror($primarySource);
+                    unset($variant['image']);
+                }
+
+                if (array_key_exists('images', $variant)) {
+                    $variant['images'] = $this->mirrorImageList((array) $variant['images']);
+                }
+
+                return $variant;
+            }, $product['variants']);
+        }
+
+        if (empty($product['image_url']) && ! empty($product['images'])) {
+            $first = $product['images'][0];
+            $product['image_url'] = is_array($first) ? ($first['url'] ?? null) : $first;
+        }
+
+        return $product;
+    }
+
+    protected function mirrorImageList(array $images): array
+    {
+        $mirrored = [];
+
+        foreach ($images as $image) {
+            $source = is_array($image) ? ($image['url'] ?? '') : $image;
+            $localPath = $this->productImageMirror->mirror(is_string($source) ? $source : null);
+
+            if ($localPath === null) {
+                continue;
+            }
+
+            if (is_array($image)) {
+                $image['url'] = $localPath;
+                $mirrored[] = $image;
+            } else {
+                $mirrored[] = $localPath;
+            }
+        }
+
+        return $mirrored;
     }
 
     protected function syncTechnicalSpecs(Product $product, array $specs): void

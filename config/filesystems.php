@@ -56,6 +56,15 @@ return [
             'report' => false,
         ],
 
+        'product_images' => [
+            'driver' => 'local',
+            'root' => public_path('images/products/synced'),
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/images/products/synced',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

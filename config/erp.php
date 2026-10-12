@@ -27,6 +27,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Copia local de imagenes de productos
+    |--------------------------------------------------------------------------
+    |
+    | La web descarga las imagenes durante la sincronizacion y las sirve desde
+    | su propio dominio. Los hosts adicionales se separan con comas.
+    |
+    */
+    'product_images' => [
+        'enabled' => env('ERP_MIRROR_PRODUCT_IMAGES', true),
+        'disk' => 'product_images',
+        'public_path' => '/images/products/synced',
+        'max_bytes' => (int) env('ERP_PRODUCT_IMAGE_MAX_BYTES', 8 * 1024 * 1024),
+        'connect_timeout' => (int) env('ERP_PRODUCT_IMAGE_CONNECT_TIMEOUT', 5),
+        'timeout' => (int) env('ERP_PRODUCT_IMAGE_TIMEOUT', 20),
+        'retry_attempts' => (int) env('ERP_PRODUCT_IMAGE_RETRY_ATTEMPTS', 2),
+        'allowed_hosts' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('ERP_PRODUCT_IMAGE_ALLOWED_HOSTS', ''))
+        ))),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | API key compartida
     |--------------------------------------------------------------------------
     |

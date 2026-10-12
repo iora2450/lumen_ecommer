@@ -12,6 +12,7 @@ use App\Services\Erp\ErpSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ErpSyncTest extends TestCase
@@ -23,6 +24,7 @@ class ErpSyncTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        config(['erp.product_images.enabled' => false]);
         Setting::set('sync_api_key', $this->apiKey, 'sync');
     }
 
@@ -237,5 +239,70 @@ class ErpSyncTest extends TestCase
             'qty' => 12,
             'is_active' => 1,
         ]);
+    }
+
+    public function test_sync_copies_product_image_to_the_ecommerce_host(): void
+    {
+        config([
+            'erp.product_images.enabled' => true,
+            'erp.legacy_public_url' => 'http://31.171.10.20',
+            'erp.legacy_product_image_path' => 'public/images/product',
+        ]);
+        Storage::fake('product_images');
+
+        $image = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=');
+        Http::fake([
+            '31.171.10.20/public/images/product/*' => Http::response($image, 200, ['Content-Type' => 'image/png']),
+        ]);
+
+        $result = app(ErpSyncService::class)->syncProducts([[
+            'erp_id' => 'IMG-1',
+            'sku' => 'IMG-1',
+            'name' => 'Producto con imagen local',
+            'price' => 10,
+            'qty' => 1,
+            'image_url' => 'lampara prueba.png',
+        ]]);
+
+        $product = Product::where('sku', 'IMG-1')->firstOrFail();
+
+        $this->assertSame(0, $result->failed);
+        $this->assertStringStartsWith('/images/products/synced/', $product->image_url);
+        $this->assertStringNotContainsString('31.171.', $product->image_url);
+        Storage::disk('product_images')->assertExists(basename($product->image_url));
+        Http::assertSent(fn ($request) => $request->url() === 'http://31.171.10.20/public/images/product/lampara%20prueba.png');
+    }
+
+    public function test_sync_keeps_existing_local_image_when_download_fails(): void
+    {
+        config([
+            'erp.product_images.enabled' => true,
+            'erp.legacy_public_url' => 'http://31.171.10.20',
+            'erp.product_images.retry_attempts' => 1,
+        ]);
+        Storage::fake('product_images');
+        Http::fake(['*' => Http::response('error', 500)]);
+
+        Product::create([
+            'lumen_id' => 'IMG-2',
+            'sku' => 'IMG-2',
+            'name' => 'Producto existente',
+            'price' => 10,
+            'image_url' => '/images/products/manual.png',
+        ]);
+
+        app(ErpSyncService::class)->syncProducts([[
+            'erp_id' => 'IMG-2',
+            'sku' => 'IMG-2',
+            'name' => 'Producto existente',
+            'price' => 10,
+            'qty' => 1,
+            'image_url' => 'imagen-no-disponible.png',
+        ]]);
+
+        $this->assertSame(
+            '/images/products/manual.png',
+            Product::where('sku', 'IMG-2')->value('image_url')
+        );
     }
 }
