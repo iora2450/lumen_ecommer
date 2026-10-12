@@ -28,6 +28,7 @@ Route::get('/carrito', [CartController::class, 'index'])->name('cart.index');
 Route::post('/carrito/agregar/{product}', [CartController::class, 'add'])->name('cart.add');
 Route::patch('/carrito', [CartController::class, 'update'])->name('cart.update');
 Route::delete('/carrito/{key}', [CartController::class, 'remove'])->name('cart.remove');
+Route::post('/carrito/totales', [CartController::class, 'totals'])->middleware('throttle:60,1')->name('cart.totals');
 Route::post('/carrito/finalizar', [CartController::class, 'checkout'])->name('cart.checkout');
 
 // Confirmación de compra

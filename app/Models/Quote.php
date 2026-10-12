@@ -38,7 +38,7 @@ class Quote extends Model
         'fiscal_district', 'fiscal_address', 'fiscal_phone', 'fiscal_email',
         'shipping_address', 'delivery_method',
         'payment_method', 'payment_status', 'subtotal', 'coupon_id', 'coupon_code',
-        'discount_amount', 'total', 'notes', 'status',
+        'discount_amount', 'tax_amount', 'total', 'notes', 'status',
     ];
 
     protected $casts = [
@@ -46,6 +46,7 @@ class Quote extends Model
         'subtotal' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'total' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
     ];
 
     protected static function booted(): void
@@ -61,6 +62,11 @@ class Quote extends Model
     public function items(): HasMany
     {
         return $this->hasMany(QuoteItem::class);
+    }
+
+    public function erpDelivery(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(ErpOrderDelivery::class);
     }
 
     public function coupon(): BelongsTo

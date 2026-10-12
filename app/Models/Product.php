@@ -23,7 +23,7 @@ class Product extends Model
     protected $fillable = [
         'lumen_id', 'sku', 'name', 'slug',
         'short_description', 'description',
-        'price', 'compare_at_price', 'cost', 'currency',
+        'price', 'tax_rate', 'compare_at_price', 'cost', 'currency',
         'qty', 'available_qty', 'reserved_qty', 'backorder_qty', 'stock_status',
         'image_url',
         'category_id', 'brand_id',
@@ -36,6 +36,7 @@ class Product extends Model
 
     protected $casts = [
         'price' => 'decimal:2',
+        'tax_rate' => 'decimal:2',
         'compare_at_price' => 'decimal:2',
         'cost' => 'decimal:2',
         'promotion_price' => 'decimal:2',

@@ -43,3 +43,5 @@ Schedule::call(function () {
         ->where('status', 'closed')
         ->update(['archived_at' => now()]);
 })->daily();
+
+Schedule::command('web-orders:sync')->everyMinute()->withoutOverlapping(5);

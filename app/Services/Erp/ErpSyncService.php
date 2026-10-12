@@ -128,6 +128,11 @@ class ErpSyncService
                     continue;
                 }
 
+                if (array_key_exists('tax_rate', $p) && (!is_numeric($p['tax_rate']) || !in_array((float) $p['tax_rate'], [0.0, 13.0], true))) {
+                    $result->addError('product', $erpId, $sku, 'invalid_tax_rate', 'IVA permitido: 0 o 13.');
+                    continue;
+                }
+
                 $categoryId = $this->resolveCategoryId($p['category_erp_id'] ?? $p['category_id'] ?? null);
                 $brandId    = $this->resolveBrandId($p['brand_erp_id'] ?? $p['brand_id'] ?? null);
 
@@ -146,6 +151,7 @@ class ErpSyncService
                             'short_description' => $existing?->short_description ?? $this->cleanRichText($p['short_description'] ?? null),
                             'description'   => $existing?->description ?? $this->cleanRichText($p['description'] ?? $p['product_details'] ?? null),
                             'price'         => (float) ($p['price'] ?? 0),
+                            'tax_rate'      => $p['tax_rate'] ?? $existing?->tax_rate ?? 13,
                             'compare_at_price' => isset($p['compare_at_price']) ? (float) $p['compare_at_price'] : null,
                             'cost'          => isset($p['cost']) ? (float) $p['cost'] : null,
                             'currency'      => $p['currency'] ?? 'USD',

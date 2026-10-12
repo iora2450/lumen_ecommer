@@ -56,6 +56,9 @@
                 @if ((float) $quote->discount_amount > 0)
                     <p style="margin:4px 0;color:#047857;font-size:14px;">Cupón {{ $quote->coupon_code }}: −${{ number_format((float) $quote->discount_amount, 2) }}</p>
                 @endif
+                @if ($quote->tax_amount !== null)
+                    <p style="margin:4px 0;font-size:14px;">IVA: ${{ number_format((float) $quote->tax_amount, 2) }}</p>
+                @endif
                 <p style="margin:6px 0 0;font-size:18px;font-weight:800;">Total estimado: ${{ number_format((float) $quote->total, 2) }}</p>
             </div>
 

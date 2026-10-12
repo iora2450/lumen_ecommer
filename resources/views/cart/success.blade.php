@@ -57,12 +57,15 @@
                             <span class="font-bold">−${{ number_format((float) $order->discount_amount, 2) }}</span>
                         </div>
                     @endif
+                    @if ($order->tax_amount !== null)
+                        <div class="flex items-center justify-between text-sm"><span>IVA</span><span>${{ number_format((float) $order->tax_amount, 2) }}</span></div>
+                    @endif
                     <div class="flex items-center justify-between border-t border-mist pt-2">
                         <span class="text-sm font-semibold">Total estimado</span>
                         <span class="text-2xl font-black">${{ number_format((float) $order->total, 2) }}</span>
                     </div>
                 </div>
-                <p class="mt-2 text-xs leading-relaxed text-brand/55">El total queda sujeto a validación de existencias, entrega, impuestos y condiciones comerciales.</p>
+                <p class="mt-2 text-xs leading-relaxed text-brand/55">El total incluye el IVA aplicable. Ventas coordinará el pago y validará las existencias y la entrega.</p>
                 @if ($order->requires_fiscal_credit)
                     <div class="mt-4 rounded-2xl border border-accent/50 bg-accent/10 px-4 py-3 text-sm leading-relaxed text-brand">
                         <strong>Crédito fiscal solicitado.</strong> Recibimos los datos de {{ $order->fiscal_legal_name }} para preparar el DTE. Ventas los validará antes de emitirlo.

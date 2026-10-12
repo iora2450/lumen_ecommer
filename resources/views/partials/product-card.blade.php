@@ -93,6 +93,7 @@
                     <span class="mb-0.5 text-xs font-medium text-brand/45 line-through">${{ number_format((float) $product->price, 2) }}</span>
                 @endif
                 <span @class(['font-black leading-none text-brand', 'text-2xl' => $isOnSale, 'text-xl' => ! $isOnSale])>${{ number_format((float) $price, 2) }}</span>
+                <span class="mt-1 text-xs text-brand/60">{{ (float) $product->tax_rate > 0 ? '+ IVA' : 'Exento de IVA' }}</span>
                 @if ($isOnSale)
                     <span class="mt-1 text-[11px] font-black uppercase tracking-wide text-emerald-700">Ahorras ${{ number_format($savings, 2) }}</span>
                 @endif

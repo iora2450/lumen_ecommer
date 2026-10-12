@@ -91,6 +91,8 @@
                 @endif
             </div>
 
+            <p class="mt-2 text-sm text-brand/60">{{ (float) $product->tax_rate > 0 ? 'Precio sin IVA. Se suma el IVA al finalizar la compra.' : 'Exento de IVA.' }}</p>
+
             {{-- Descripción --}}
             @if ($description)
                 <p class="mt-6 text-brand/80 leading-relaxed">{{ $description }}</p>

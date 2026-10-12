@@ -9,12 +9,16 @@ class QuoteItem extends Model
 {
     protected $fillable = [
         'quote_id', 'product_id', 'variant_id',
-        'sku', 'name', 'price', 'qty', 'subtotal', 'attributes',
+        'sku', 'name', 'price', 'qty', 'subtotal', 'tax_rate', 'discount_amount', 'tax_amount', 'total', 'attributes',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'subtotal' => 'decimal:2',
+        'tax_rate' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'total' => 'decimal:2',
         'qty' => 'integer',
         'attributes' => 'array',
     ];

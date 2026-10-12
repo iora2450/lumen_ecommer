@@ -27,6 +27,9 @@
                     <span>Cupón {{ $quote->coupon_code }}</span><span>−${{ number_format((float) $quote->discount_amount, 2) }}</span>
                 </div>
             @endif
+            @if ($quote->tax_amount !== null)
+                <div class="flex justify-between text-sm"><span>IVA</span><span>${{ number_format((float) $quote->tax_amount, 2) }}</span></div>
+            @endif
             <div class="flex justify-between text-lg font-bold"><span>Total</span><span>${{ number_format((float) $quote->total, 2) }}</span></div>
         </div>
 
@@ -39,6 +42,18 @@
     </div>
 
     <div class="space-y-4">
+        @if ($delivery = $quote->erpDelivery)
+        <div class="rounded-xl border border-slate-200 bg-white p-6">
+            <h3 class="font-semibold mb-3">Recibo enviado a lumensistema</h3>
+            <p>{{ $delivery->delivered_at ? 'Recibo recibido por el ERP' : 'Pendiente de entrega al ERP' }}</p>
+            @if ($delivery->last_error)<p class="text-red-700">{{ $delivery->last_error }} Se reintentará automáticamente.</p>@endif
+            @if ($status = $delivery->erp_status)
+                <p>Recibo: {{ $status['receipt_number'] ?? $quote->quote_number }}</p>
+                <p class="text-xs text-slate-500">Entregado: {{ optional($delivery->delivered_at)->format('d/m/Y H:i') }}</p>
+            @endif
+            <p class="mt-2 text-sm text-slate-500">Este envío no es una factura fiscal. El número de control, código de generación y sello se crean y permanecen en lumensistema cuando un usuario del ERP procesa la factura.</p>
+        </div>
+        @endif
         <div class="rounded-xl border border-slate-200 bg-white p-6">
             <h3 class="font-semibold text-[#203749] mb-4">Cliente</h3>
             <dl class="text-sm space-y-2">

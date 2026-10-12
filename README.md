@@ -15,3 +15,7 @@ El servicio `assets` instala y compila automáticamente los estilos antes de ini
 Mailpit queda disponible en `http://localhost:8026`.
 
 La documentación funcional y técnica se encuentra en `documentacion/`.
+
+## Recibos web y facturación fiscal manual
+
+Instalación, configuración, permisos y pruebas: [docs/pedidos-web.md](docs/pedidos-web.md).

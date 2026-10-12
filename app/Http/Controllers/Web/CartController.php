@@ -9,6 +9,7 @@ use App\Models\ProductVariant;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Services\Quotes\QuoteEmailService;
+use App\Services\Quotes\PurchaseTotals;
 use App\Support\EconomicActivityCatalog;
 use App\Support\GeographicCatalog;
 use Illuminate\Http\Request;
@@ -21,7 +22,8 @@ class CartController extends Controller
     public function __construct(
         private EconomicActivityCatalog $economicActivities,
         private GeographicCatalog $geographicCatalog,
-    ) {}
+    ) {
+    }
 
     public function index(Request $request)
     {
@@ -30,11 +32,35 @@ class CartController extends Controller
         return view('cart.index', [
             'items' => $cart['items'],
             'subtotal' => $cart['subtotal'],
+            'totals' => app(PurchaseTotals::class)->calculate($cart['items']),
             'economicActivities' => $this->economicActivities->all(),
             'departments' => $this->geographicCatalog->departments(),
             'municipalities' => $this->geographicCatalog->municipalities(),
             'districts' => $this->geographicCatalog->districts(),
         ]);
+    }
+
+    public function totals(Request $request)
+    {
+        $data = $request->validate([
+            'items' => ['nullable', 'array'], 'items.*.qty' => ['required', 'integer', 'min:0', 'max:10000'],
+            'coupon_code' => ['nullable', 'string', 'max:50'],
+        ]);
+        $items = $this->cartItems($request)['items'];
+        foreach ($items as &$item) {
+            $item['qty'] = (int) ($data['items'][$item['key']]['qty'] ?? $item['qty']);
+        }
+        unset($item);
+        $subtotal = app(PurchaseTotals::class)->calculate($items)['subtotal'];
+        $discount = 0;
+        if (filled($data['coupon_code'] ?? null)) {
+            $coupon = Coupon::where('code', strtoupper(trim($data['coupon_code'])))->first();
+            if (! $coupon || ($error = $coupon->availabilityError($subtotal))) {
+                throw ValidationException::withMessages(['coupon_code' => $error ?? 'El código de cupón no existe.']);
+            }
+            $discount = $coupon->calculateDiscount($subtotal);
+        }
+        return response()->json(app(PurchaseTotals::class)->calculate($items, $discount));
     }
 
     public function add(Request $request, Product $product)
@@ -260,6 +286,10 @@ class CartController extends Controller
                 $discountAmount = $coupon->calculateDiscount($subtotal);
             }
 
+            $totals = app(PurchaseTotals::class)->calculate($cart['items'], $discountAmount);
+            if ($totals['total'] <= 0) {
+                throw ValidationException::withMessages(['coupon_code' => 'La compra debe tener un total mayor que cero.']);
+            }
             $quote = Quote::create([
                 'request_type' => Quote::TYPE_PURCHASE,
                 'customer_name' => $validated['customer_name'],
@@ -291,10 +321,11 @@ class CartController extends Controller
                 'coupon_id' => $coupon?->id,
                 'coupon_code' => $coupon?->code,
                 'discount_amount' => $discountAmount,
-                'total' => round($subtotal - $discountAmount, 2),
+                'tax_amount' => $totals['tax_amount'],
+                'total' => $totals['total'],
             ]);
 
-            foreach ($cart['items'] as $item) {
+            foreach ($totals['items'] as $item) {
                 $itemSubtotal = round($item['price'] * $item['qty'], 2);
 
                 QuoteItem::create([
@@ -306,13 +337,20 @@ class CartController extends Controller
                     'price' => $item['price'],
                     'qty' => $item['qty'],
                     'subtotal' => $itemSubtotal,
+                    'tax_rate' => $item['tax_rate'],
+                    'discount_amount' => $item['discount_amount'],
+                    'tax_amount' => $item['tax_amount'],
+                    'total' => $item['total'],
                     'attributes' => $item['attributes'],
                 ]);
             }
 
             $coupon?->increment('times_used');
 
-            return $quote->load('items');
+            $quote->load('items');
+            app(\App\Services\Erp\WebOrderDelivery::class)->enqueue($quote);
+
+            return $quote;
         });
 
         app(QuoteEmailService::class)->send($quote);
@@ -355,6 +393,7 @@ class CartController extends Controller
                         'sku' => $variant->sku,
                         'name' => $variant->product->name.' - '.$variant->name,
                         'price' => (float) $variant->price,
+                        'tax_rate' => (float) $variant->product->tax_rate,
                         'qty' => $qty,
                         'image_url' => $variant->product->display_image_url,
                         'attributes' => $variant->attributes,
@@ -372,6 +411,7 @@ class CartController extends Controller
                         'sku' => $product->sku,
                         'name' => $product->name,
                         'price' => (float) $product->effective_price,
+                        'tax_rate' => (float) $product->tax_rate,
                         'qty' => $qty,
                         'image_url' => $product->display_image_url,
                         'attributes' => null,

@@ -73,13 +73,13 @@ class CouponManagementTest extends TestCase
         $this->assertSame($coupon->id, $quote->coupon_id);
         $this->assertSame('AHORRO20', $quote->coupon_code);
         $this->assertSame('40.00', $quote->discount_amount);
-        $this->assertSame('160.00', $quote->total);
+        $this->assertSame('180.80', $quote->total);
         $this->assertSame(1, $coupon->fresh()->times_used);
 
         $this->get(route('cart.success', $quote->quote_number))
             ->assertOk()
             ->assertSee('Cupón AHORRO20')
-            ->assertSee('$160.00');
+            ->assertSee('IVA')->assertSee('$20.80')->assertSee('$180.80');
     }
 
     public function test_checkout_rejects_a_coupon_when_minimum_purchase_is_not_met(): void

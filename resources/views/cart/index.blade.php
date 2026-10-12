@@ -3,6 +3,9 @@
 @section('description', 'Revisa los productos de tu carrito y completa tu compra.')
 
 @section('content')
+@if(app()->environment('local') && config('web_orders.simulated'))
+<div class="mx-auto my-4 max-w-7xl rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"><strong>Demostración local.</strong> Usa los productos LUMEN-DEMO-IVA o LUMEN-DEMO-EXENTO. Ecommerce enviará únicamente un recibo al ERP; cualquier factura fiscal requiere la intervención posterior de un usuario de lumensistema.</div>
+@endif
 @php
     $selectedActivityCode = old('fiscal_activity_code');
     $selectedActivityData = collect($economicActivities)->firstWhere('codigo', $selectedActivityCode);
@@ -140,8 +143,17 @@
                 </div>
                 <div class="text-right">
                     <p class="text-xs text-brand/60">Total estimado</p>
-                    <p class="text-2xl font-black text-brand" data-cart-total>${{ number_format((float) $subtotal, 2) }}</p>
+                    <p class="text-2xl font-black text-brand" data-cart-total>${{ number_format((float) $totals['total'], 2) }}</p>
                 </div>
+            </div>
+
+            <div class="mt-4 space-y-2 text-sm text-brand" aria-live="polite">
+                <div class="flex justify-between"><span>Subtotal sin IVA</span><span data-summary-subtotal>${{ number_format($totals['subtotal'], 2) }}</span></div>
+                <div class="flex justify-between"><span>Descuento</span><span data-summary-discount>$0.00</span></div>
+                <div class="flex justify-between"><span>IVA</span><span data-summary-tax>${{ number_format($totals['tax_amount'], 2) }}</span></div>
+                <p class="text-xs text-brand/70">Los precios no incluyen IVA. El impuesto se suma después del descuento.</p>
+                <p data-totals-message role="status" class="text-xs text-brand/70"></p>
+                <button type="button" data-retry-totals class="font-bold underline" hidden>Recalcular total</button>
             </div>
 
             <form id="checkout-form" method="POST" action="{{ route('cart.checkout') }}" class="mt-6 space-y-5">
@@ -306,7 +318,7 @@
                         <input name="coupon_code" value="{{ old('coupon_code') }}" maxlength="50" autocomplete="off"
                                class="rounded-xl border border-mist bg-white px-3 py-2.5 font-mono text-sm font-bold uppercase text-brand focus:border-accent focus:outline-none"
                                placeholder="Ejemplo: VERANO20">
-                        <span class="font-normal text-brand/55">Si cumple las condiciones, el descuento aparecerá en la confirmación del pedido.</span>
+                        <span class="font-normal text-brand/55">El descuento y el IVA se actualizarán en el resumen antes de registrar la compra.</span>
                     </label>
                     <div class="flex gap-3 rounded-xl bg-white p-3 text-xs leading-relaxed text-brand/70">
                         <svg class="mt-0.5 size-5 shrink-0 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M10.3 3.6L2.7 17a2 2 0 001.7 3h15.2a2 2 0 001.7-3L13.7 3.6a2 2 0 00-3.4 0z"/></svg>
@@ -436,19 +448,56 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     }
 
+    let totalsRequest = 0;
+    let totalsTimer;
+    let totalsReady = false;
+    const totalsMessage = document.querySelector('[data-totals-message]');
+    const retryTotals = document.querySelector('[data-retry-totals]');
+
     function refreshTotals() {
-        let total = 0;
         document.querySelectorAll('[data-cart-row]').forEach((row) => {
             const input = row.querySelector('[data-cart-qty]');
             const qty = Math.max(0, Number.parseInt(input.value || '0', 10));
             const subtotal = Number.parseFloat(row.dataset.price || '0') * qty;
             row.querySelector('[data-row-subtotal]').textContent = money.format(subtotal);
-            total += subtotal;
 
             const checkoutQty = checkoutForm?.querySelector(`[data-checkout-qty="${input.dataset.cartKey}"]`);
             if (checkoutQty) checkoutQty.value = qty;
         });
-        document.querySelectorAll('[data-cart-total]').forEach((element) => element.textContent = money.format(total));
+        const requestId = ++totalsRequest;
+        clearTimeout(totalsTimer);
+        totalsReady = false;
+        if (button) button.disabled = true;
+        totalsMessage.textContent = 'Calculando descuento e IVA…';
+        retryTotals.hidden = true;
+        document.querySelectorAll('[data-cart-total]').forEach((element) => element.textContent = '…');
+        totalsTimer = setTimeout(async () => {
+            try {
+                const form = new FormData(checkoutForm);
+                const body = new FormData();
+                for (const [key, value] of form) {
+                    if (key === '_token' || key === 'coupon_code' || key.startsWith('items[')) body.append(key, value);
+                }
+                const response = await fetch(@json(route('cart.totals')), {
+                    method: 'POST', headers: { 'Accept': 'application/json' }, body,
+                });
+                const data = await response.json();
+                if (requestId !== totalsRequest) return;
+                if (!response.ok) throw new Error(Object.values(data.errors || {}).flat()[0] || 'No se pudo calcular el total.');
+                document.querySelector('[data-summary-subtotal]').textContent = money.format(data.subtotal);
+                document.querySelector('[data-summary-discount]').textContent = (data.discount_amount > 0 ? '−' : '') + money.format(data.discount_amount);
+                document.querySelector('[data-summary-tax]').textContent = money.format(data.tax_amount);
+                document.querySelectorAll('[data-cart-total]').forEach((element) => element.textContent = money.format(data.total));
+                if (data.total <= 0) throw new Error('La compra debe tener un total mayor que cero.');
+                totalsMessage.textContent = '';
+                totalsReady = true;
+                if (button) button.disabled = false;
+            } catch (error) {
+                if (requestId !== totalsRequest) return;
+                totalsMessage.textContent = error.message || 'No se pudo calcular el total. Intenta nuevamente.';
+                retryTotals.hidden = false;
+            }
+        }, 300);
     }
 
     document.querySelectorAll('[data-qty-change]').forEach((button) => {
@@ -460,11 +509,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     document.querySelectorAll('[data-cart-qty]').forEach((input) => input.addEventListener('input', refreshTotals));
+    checkoutForm?.querySelector('[name="coupon_code"]')?.addEventListener('input', refreshTotals);
+    retryTotals?.addEventListener('click', refreshTotals);
     fiscalCreditToggle?.addEventListener('change', refreshFiscalCredit);
     fiscalDepartment?.addEventListener('change', () => refreshGeographicSelections(false));
     activitySearch?.addEventListener('input', syncEconomicActivity);
     activitySearch?.addEventListener('change', syncEconomicActivity);
     checkoutForm?.addEventListener('submit', (event) => {
+        if (!totalsReady) {
+            event.preventDefault();
+            refreshTotals();
+            return;
+        }
         if (fiscalCreditToggle?.checked && !syncEconomicActivity()) {
             event.preventDefault();
             activitySearch?.reportValidity();

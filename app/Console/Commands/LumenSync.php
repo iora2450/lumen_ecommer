@@ -122,11 +122,12 @@ class LumenSync extends Command
                 ])
                 ->all();
 
+            $taxRates = DB::connection('lumen_runtime')->table('taxes')->pluck('rate', 'id');
             $products = DB::connection('lumen_runtime')
                 ->table('products')
                 ->where('is_active', 1)
                 ->select(
-                    'id', 'name', 'code', 'price', 'cost', 'qty',
+                    'id', 'name', 'code', 'price', 'cost', 'qty', 'tax_id',
                     'image', 'product_details', 'category_id', 'brand_id',
                     'featured', 'promotion', 'promotion_price', 'is_variant'
                 )
@@ -137,6 +138,7 @@ class LumenSync extends Command
                     'name'        => $r->name,
                     'description' => $r->product_details,
                     'price'       => (float) $r->price,
+                    'tax_rate'    => $r->tax_id ? ($taxRates[$r->tax_id] ?? -1) : 0,
                     'cost'        => (float) $r->cost,
                     'qty'         => (int) $r->qty,
                     'image_url'   => $r->image,
