@@ -70,6 +70,10 @@
                     <div class="mt-4 rounded-2xl border border-accent/50 bg-accent/10 px-4 py-3 text-sm leading-relaxed text-brand">
                         <strong>Crédito fiscal solicitado.</strong> Recibimos los datos de {{ $order->fiscal_legal_name }} para preparar el DTE. Ventas los validará antes de emitirlo.
                     </div>
+                @else
+                    <div class="mt-4 rounded-2xl border border-mist bg-mist/15 px-4 py-3 text-sm leading-relaxed text-brand">
+                        <strong>Factura de Consumidor Final.</strong> Como no solicitaste crédito fiscal, este será el tipo de DTE que preparará Ventas después de validar el pago.
+                    </div>
                 @endif
             </div>
 

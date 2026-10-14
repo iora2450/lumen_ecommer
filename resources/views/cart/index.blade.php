@@ -199,7 +199,7 @@
                                @checked(old('requires_fiscal_credit'))>
                         <span>
                             <span class="block text-sm font-bold text-brand">Deseo crédito fiscal</span>
-                            <span class="mt-1 block text-xs leading-relaxed text-brand/60">Completa los datos del receptor para preparar el Comprobante de Crédito Fiscal electrónico (DTE).</span>
+                            <span class="mt-1 block text-xs leading-relaxed text-brand/60">Completa los datos del receptor para preparar el Comprobante de Crédito Fiscal electrónico (DTE). Si no seleccionas esta opción, se preparará una Factura de Consumidor Final.</span>
                         </span>
                     </label>
 

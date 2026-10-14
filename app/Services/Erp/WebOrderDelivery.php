@@ -21,6 +21,10 @@ class WebOrderDelivery
             'fiscal_activity_code', 'fiscal_activity_description', 'fiscal_department_code',
             'fiscal_municipality_code', 'fiscal_district_code', 'fiscal_address', 'fiscal_phone',
             'fiscal_email', 'shipping_address', 'delivery_method', 'notes', 'coupon_code'];
+        $customer = $quote->only($fields);
+        $customer['requested_document_type'] = $quote->requires_fiscal_credit
+            ? 'fiscal_credit'
+            : 'consumer_final';
         ErpOrderDelivery::firstOrCreate(['quote_id' => $quote->id], ['payload' => [
             'version' => $quote->tax_amount === null ? 1 : 2,
             'source' => config('web_orders.source'),
@@ -28,7 +32,7 @@ class WebOrderDelivery
             'document_type' => 'receipt',
             'order_number' => $quote->quote_number,
             'currency' => 'USD',
-            'customer' => $quote->only($fields),
+            'customer' => $customer,
             'subtotal' => $quote->subtotal,
             'discount' => $quote->discount_amount,
             'total' => $quote->total,

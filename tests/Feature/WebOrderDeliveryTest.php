@@ -47,6 +47,7 @@ class WebOrderDeliveryTest extends TestCase
         $this->assertSame('2.94', $delivery->payload['tax']);
         $this->assertSame('13.00', $delivery->payload['items'][0]['tax_rate']);
         $this->assertFalse($delivery->payload['customer']['requires_fiscal_credit']);
+        $this->assertSame('consumer_final', $delivery->payload['customer']['requested_document_type']);
         Product::query()->update(['price' => 99,'lumen_id' => '999']);
         app(WebOrderDelivery::class)->enqueue(Quote::sole());
         $this->assertDatabaseCount('erp_order_deliveries', 1);
