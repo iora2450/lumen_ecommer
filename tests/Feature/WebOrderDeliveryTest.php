@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\{ErpOrderDelivery,Product,Quote};
+use App\Models\{ErpOrderDelivery,Product,Quote,User};
 use App\Services\Erp\WebOrderDelivery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\{Http,Mail,DB};
@@ -119,5 +119,45 @@ class WebOrderDeliveryTest extends TestCase
         $this->travel(2)->minutes();
         $this->artisan('web-orders:sync')->assertSuccessful();
         Http::assertSentCount(2);
+    }
+
+    public function test_admin_can_see_and_retry_a_missing_erp_delivery_without_duplicates(): void
+    {
+        $delivery = $this->checkout();
+        $quote = Quote::sole();
+        $delivery->delete();
+        $admin = User::factory()->create();
+
+        $this->actingAs($admin)->get(route('admin.quotes.show', $quote))
+            ->assertOk()
+            ->assertSee('Pendiente de envío al ERP')
+            ->assertSee('Actualizar envío al ERP');
+
+        Http::fake(function ($request) {
+            $payload = $request->data();
+            return Http::response(['data' => [
+                'source' => $payload['source'], 'external_id' => $payload['external_id'],
+                'document_type' => 'receipt', 'receipt_number' => $payload['order_number'],
+                'receipt_status' => 'received', 'received_at' => now()->toIso8601String(),
+            ]], 200);
+        });
+
+        $this->actingAs($admin)->post(route('admin.quotes.erp-delivery', $quote))
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Recibo enviado y confirmado por el ERP.');
+
+        $delivery = ErpOrderDelivery::sole();
+        $this->assertNotNull($delivery->delivered_at);
+        $this->assertSame('received', $delivery->erp_status['receipt_status']);
+        Http::assertSentCount(1);
+
+        $this->actingAs($admin)->post(route('admin.quotes.erp-delivery', $quote))
+            ->assertSessionHas('success', 'El recibo ya fue recibido por el ERP.');
+        Http::assertSentCount(1);
+
+        $this->actingAs($admin)->get(route('admin.quotes.show', $quote))
+            ->assertOk()
+            ->assertSee('Enviado al ERP')
+            ->assertDontSee('Actualizar envío al ERP');
     }
 }

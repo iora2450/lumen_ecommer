@@ -82,6 +82,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('quotes', [QuoteAdminController::class, 'index'])->name('quotes.index');
         Route::get('quotes/{quote}', [QuoteAdminController::class, 'show'])->name('quotes.show');
         Route::patch('quotes/{quote}/status', [QuoteAdminController::class, 'updateStatus'])->name('quotes.status');
+        Route::post('quotes/{quote}/erp-delivery', [QuoteAdminController::class, 'syncErpDelivery'])->name('quotes.erp-delivery');
 
         Route::get('sync', [SyncAdminController::class, 'index'])->name('sync.index');
         Route::post('sync/run', [SyncAdminController::class, 'runNow'])->name('sync.run');

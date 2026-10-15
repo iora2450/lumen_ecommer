@@ -42,18 +42,31 @@
     </div>
 
     <div class="space-y-4">
-        @if ($delivery = $quote->erpDelivery)
-        <div class="rounded-xl border border-slate-200 bg-white p-6">
-            <h3 class="font-semibold mb-3">Recibo enviado a lumensistema</h3>
-            <p>{{ $delivery->delivered_at ? 'Recibo recibido por el ERP' : 'Pendiente de entrega al ERP' }}</p>
-            @if ($delivery->last_error)<p class="text-red-700">{{ $delivery->last_error }} Se reintentará automáticamente.</p>@endif
-            @if ($status = $delivery->erp_status)
-                <p>Recibo: {{ $status['receipt_number'] ?? $quote->quote_number }}</p>
-                <p class="text-xs text-slate-500">Entregado: {{ optional($delivery->delivered_at)->format('d/m/Y H:i') }}</p>
+        @php($delivery = $quote->erpDelivery)
+        <div class="rounded-xl border-2 {{ $delivery?->delivered_at ? 'border-emerald-300 bg-emerald-50' : ($delivery?->last_error ? 'border-red-300 bg-red-50' : 'border-amber-300 bg-amber-50') }} p-6">
+            <h3 class="font-semibold text-[#203749] mb-3">Estado del envío al ERP</h3>
+            @if ($delivery?->delivered_at)
+                <p class="font-bold text-emerald-700">✓ Enviado al ERP</p>
+                <p class="mt-1 text-sm">Recibo {{ data_get($delivery->erp_status, 'receipt_number', $quote->quote_number) }}</p>
+                <p class="text-xs text-slate-500">Confirmado: {{ $delivery->delivered_at->timezone('America/El_Salvador')->format('d/m/Y H:i:s') }}</p>
+            @elseif ($delivery?->last_error)
+                <p class="font-bold text-red-700">No enviado al ERP</p>
+                <p class="mt-1 text-sm text-red-700">{{ $delivery->last_error }}</p>
+                <p class="mt-1 text-xs text-slate-500">Intentos: {{ $delivery->attempts }}. También se reintentará automáticamente.</p>
+            @else
+                <p class="font-bold text-amber-700">Pendiente de envío al ERP</p>
+                <p class="mt-1 text-sm text-slate-600">El ERP todavía no ha confirmado la recepción de este pedido.</p>
             @endif
-            <p class="mt-2 text-sm text-slate-500">Este envío no es una factura fiscal. El número de control, código de generación y sello se crean y permanecen en lumensistema cuando un usuario del ERP procesa la factura.</p>
+
+            @if (! $delivery?->delivered_at)
+                <form method="POST" action="{{ route('admin.quotes.erp-delivery', $quote) }}" class="mt-4">
+                    @csrf
+                    <button type="submit" class="w-full rounded-lg bg-[#203749] px-4 py-2 font-semibold text-white">Actualizar envío al ERP</button>
+                </form>
+            @endif
+
+            <p class="mt-3 text-xs text-slate-500">Este envío entrega el recibo comercial. El DTE se procesa manualmente en lumensistema después de validar el pago.</p>
         </div>
-        @endif
         <div class="rounded-xl border border-slate-200 bg-white p-6">
             <h3 class="font-semibold text-[#203749] mb-4">Cliente</h3>
             <dl class="text-sm space-y-2">
